@@ -9,13 +9,11 @@ class MatrixModule(BotModule):
     def get_settings(self):
         data = super().get_settings()
         data['quotes'] = list(self.quotes)
-        self.logger.info('got quote list, including {}'.format(data['quotes'][0]))
         return data
 
     def set_settings(self, data):
         super().set_settings(data)
         if data.get('quotes'):
-            self.logger.info('got quote list, including {}'.format(data['quotes'][0]))
             self.quotes = set(data['quotes'])
 
     async def matrix_message(self, bot, room, event):
