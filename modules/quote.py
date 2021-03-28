@@ -21,13 +21,6 @@ class MatrixModule(BotModule):
         if data.get('quotes'):
             self.quotes = data['quotes']
 
-    def matrix_start(self, bot):
-        super().matrix_start(bot)
-        # alias !name -> !quote name
-        for key in self.quotes.keys() + self.aliases.keys():
-            if not bot.modules.get(key):
-                bot.modules[key] = bot.modules[self.name]
-
     async def matrix_message(self, bot, room, event):
         self.logger.info(f"room: {room.name} sender: {event.sender} wants a quote")
 

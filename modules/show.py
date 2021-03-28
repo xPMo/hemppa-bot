@@ -23,14 +23,6 @@ class MatrixModule(BotModule):
         if data.get('is_live'):
             self.is_live = data['is_live']
 
-    def matrix_start(self, bot):
-        super().matrix_start(bot)
-        # make aliases
-        bot.modules['suggest']   = bot.modules[self.name]
-        bot.modules['startshow'] = bot.modules[self.name]
-        bot.modules['endshow']   = bot.modules[self.name]
-        bot.modules['live']      = bot.modules[self.name]
-
     async def matrix_message(self, bot, room, event):
 
         args = event.body.split()
@@ -85,7 +77,6 @@ class MatrixModule(BotModule):
                     bot.save_settings()
             else:
                 await bot.send_text(room, 'No show is live!')
-
 
     def make_poll(self):
         label = f'Title suggestions for {self.show}'
