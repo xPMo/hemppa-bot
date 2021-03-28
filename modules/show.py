@@ -6,6 +6,7 @@ class MatrixModule(BotModule):
         super().__init__(name)
         self.suggestions = dict()
         self.show = None
+        self.is_live = False
 
     def get_settings(self):
         data = super().get_settings()
@@ -32,7 +33,7 @@ class MatrixModule(BotModule):
             try:
                 cmd = args.pop(0).lower()
             except (ValueError,IndexError):
-                cmd = ''
+                cmd = '!'
         if cmd[0] == '!':
             cmd = cmd[1:]
 

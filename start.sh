@@ -4,7 +4,7 @@ set -e
 cp_modules(){
 	set modules/*.py
 	if [ -e "$1" ]; then
-		cp "$@" hemppa/modules
+		cp -P "$@" hemppa/modules
 	fi
 }
 
