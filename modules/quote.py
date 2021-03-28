@@ -22,25 +22,28 @@ class MatrixModule(BotModule):
             self.quotes = data['quotes']
 
     async def matrix_message(self, bot, room, event):
-        self.logger.info(f"room: {room.name} sender: {event.sender} wants a quote")
 
         args = event.body.split()
-        args.pop(0)
 
-        try:
-            cmd = args[0].lower()
-        except (ValueError,IndexError):
-            cmd = ''
+        cmd = args.pop(0).lower()
+        if cmd == f'!{self.name}':
+            try:
+                cmd = args.pop(0).lower()
+            except (ValueError,IndexError):
+                cmd = '!'
+        if cmd[0] == '!':
+            cmd = cmd[1:]
 
-        if cmd == '!!wipeallquotes':
+        if cmd == 'wipeallquotes':
             bot.must_be_owner(event)
+            self.logger.info(f"room: {room.name} sender: {event.sender} is wiping all quotes")
             self.quotes = {}
             self.aliases = {}
 
             bot.save_settings()
             await bot.send_text(room, 'Removed all quotes!')
 
-        elif cmd in ['!addname', '!addkey']:
+        elif cmd in ['addname', 'addkey']:
             bot.must_be_owner(event)
             args.pop(0)
             args = [s.lower() for s in args]
@@ -50,12 +53,13 @@ class MatrixModule(BotModule):
             elif self.key_exists(args[0]):
                 await bot.send_text(room, '{} already exists'.format(args[0]))
             else:
+                self.logger.info(f"room: {room.name} sender: {event.sender} is adding a key")
                 self.quotes[args[0].lower()] = []
                 bot.save_settings()
                 await bot.send_text(room, 'Added {}'.format(args[0]))
 
 
-        elif cmd in ['!addalias', '!alias']:
+        elif cmd in ['addalias', 'alias']:
             bot.must_be_owner(event)
             args.pop(0)
             args = [s.lower() for s in args]
@@ -68,16 +72,18 @@ class MatrixModule(BotModule):
                 if self.aliases.get(args[1]):
                     args[1] = self.aliases[args[1]]
                 if self.quotes.get(args[1]) is not None:
+                    self.logger.info(f"room: {room.name} sender: {event.sender} is adding an alias")
                     self.aliases[args[0].lower()] = args[1].lower()
                     bot.save_settings()
                     await bot.send_text(room, 'Added {} as alias for {}'.format(args[0], args[1]))
                 else:
                     await bot.send_text(room, 'No such name: {}'.format(args[1]))
 
-        elif cmd in ['!list', '!ls', '!l']:
+        elif cmd in ['list', 'ls', 'l']:
             bot.must_be_owner(event)
             args.pop(0)
 
+            self.logger.info(f"room: {room.name} sender: {event.sender} wants to list quotes")
             if len(args) == 0:
                 await bot.send_text(room, '\n'.join(self.quotes.keys()))
             else:
@@ -86,7 +92,7 @@ class MatrixModule(BotModule):
                 except:
                     await bot.send_text(room, 'No matching quote')
 
-        elif cmd in ['!add', '!a', '!new']:
+        elif cmd in ['add', 'a', 'new']:
             bot.must_be_owner(event)
             args.pop(0)
 
@@ -102,7 +108,7 @@ class MatrixModule(BotModule):
                 await bot.send_text(room, f'{key} does not exist')
 
 
-        elif cmd in ['!remove', '!rm', '!r']:
+        elif cmd in ['remove', 'rm', 'r']:
             bot.must_be_owner(event)
             args.pop(0)
 
@@ -117,11 +123,15 @@ class MatrixModule(BotModule):
                 else:
                     quotes.remove(l[0])
                     bot.save_settings()
+                    self.logger.info(f"room: {room.name} sender: {event.sender} is removing a quote")
                     await bot.send_text(room, 'Removed quote: {}'.format(l[0]))
             except KeyError:
                 await bot.send_text(room, 'No such key: {}'.format(args[0]))
 
         else:
+            if cmd in ['get']:
+                args.pop(0)
+            self.logger.info(f"room: {room.name} sender: {event.sender} wants a quote")
             try:
                 quote = random.sample(self.get_quotes(*args), 1)[0]
                 await bot.send_text(room, f'"{quote}"', msgtype='m.text')
