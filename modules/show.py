@@ -45,7 +45,9 @@ class MatrixModule(BotModule):
                 self.logger.info(f"room: {room.name} sender: {event.sender} is starting a show")
                 self.show = ' '.join(args) or self.show
 
-                await bot.send_text(room, 'Starting {self.show}!')
+                await bot.send_text(room, f'Starting {self.show}!')
+
+                self.is_live = True
                 self.suggestions = dict()
                 bot.save_settings()
 
@@ -53,7 +55,8 @@ class MatrixModule(BotModule):
             bot.must_be_owner(event)
             if self.is_live:
                 self.logger.info(f"room: {room.name} sender: {event.sender} is ending a show")
-                await bot.send_text(room, 'Ending {self.show}!')
+                await bot.send_text(room, f'Ending {self.show}!')
+                self.is_live = False
                 msg = self.make_poll()
                 await bot.client.room_send(room.room_id, 'm.room.message', msg)
                 bot.save_settings()
@@ -69,7 +72,7 @@ class MatrixModule(BotModule):
 
         elif cmd in ['suggest']:
             if self.is_live:
-                title = ' '.join(args[1:])
+                title = ' '.join(args)
                 self.logger.info(f"room: {room.name} sender: {event.sender} is suggesting {title}")
                 if name := self.suggestions.get(title):
                     await bot.send_text(room, f'{title} was already suggested by {name}!')
@@ -83,16 +86,17 @@ class MatrixModule(BotModule):
         label = f'Title suggestions for {self.show}'
         options = []
         for i, k in enumerate(self.suggestions):
-            s = '{} (from {})'.format(k, self.suggestions[k])
+            s = '{} ({})'.format(k, self.suggestions[k])
             options.append({
                 'label': s,
                 'value': '{}: {}'.format(i, s)
             })
 
         return {
-            'body': label + '\n'.join([opt['label'] for opt in options]),
+            'body': label + '\n' + '\n'.join([opt['label'] for opt in options]),
             'label': label,
             'msgtype': 'org.matrix.options',
+            'type': 'org.matrix.poll',
             'options': options
         }
 
