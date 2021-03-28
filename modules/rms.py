@@ -6,8 +6,20 @@ class MatrixModule(BotModule):
         super().__init__(name)
         self.quotes = set()
 
+    def get_settings(self):
+        data = super().get_settings()
+        data['quotes'] = list(self.quotes)
+        self.logger.info('got quote list, including {}'.format(data['quotes'][0]))
+        return data
+
+    def set_settings(self, data):
+        super().set_settings(data)
+        if data.get('quotes'):
+            self.logger.info('got quote list, including {}'.format(data['quotes'][0]))
+            self.quotes = set(data['quotes'])
+
     async def matrix_message(self, bot, room, event):
-        self.logger.debug(f"room: {room.name} sender: {event.sender} wants an rms quote")
+        self.logger.info(f"room: {room.name} sender: {event.sender} wants an rms quote")
 
         args = event.body.split()
         args.pop(0)
@@ -46,6 +58,7 @@ class MatrixModule(BotModule):
             else:
                 quote = l[0]
                 self.quotes.remove(quote)
+                bot.save_settings()
                 await bot.send_text(room, f'Removed: {quote}')
 
         else:
