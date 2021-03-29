@@ -45,14 +45,17 @@ class MatrixModule(BotModule):
         try: 
             show = self.rooms[room.room_id]
         except:
-            self.logger.info(f"No show data for {room.name}, creating defaults")
-            self.rooms[room.room_id] = {
-                    'title': room.name,
-                    'is_live': False,
-                    'suggestions': dict()
-            }
-            bot.save_settings()
-            show = self.rooms[room.room_id]
+            if bot.is_owner(event):
+                self.logger.info(f"No show data for {room.name}, creating defaults")
+                self.rooms[room.room_id] = {
+                        'title': room.name,
+                        'is_live': False,
+                        'suggestions': dict()
+                }
+                bot.save_settings()
+                show = self.rooms[room.room_id]
+            else:
+                return
 
         if cmd in ['help', '-help', '--help']:
             self.logger.info(f"room: {room.name} sender: {event.sender} asked for show help")
