@@ -5,18 +5,6 @@ class MatrixModule(BotModule):
     def __init__(self, name):
         super().__init__(name)
         self.rooms = dict()
-        self.help_text = [
-                'Usage: !show [cmd]',
-                '- !show help: Message you this help text',
-                '- !show live: Ask if a show is live for the current room',
-                '- !show suggest [your cool title]: Suggest a title for the current show'
-        ]
-        self.owner_help_text = [
-                '- !show (re)name [new show name]: Rename the show for the current room',
-                '- !show start[[new show name]]: Start the show for the current room',
-                '   Optional argument renames the show',
-                '- !show stop | !show end: Ends the currently running show',
-        ]
 
     def get_settings(self):
         data = super().get_settings()
@@ -60,9 +48,11 @@ class MatrixModule(BotModule):
         if cmd in ['help', '-help', '--help']:
             self.logger.info(f"room: {room.name} sender: {event.sender} asked for show help")
 
-            bot.send_msg(event.sender, 'Chat with ' + bot.matrix_user, '\n'.join(
-                (help_text + owner_help_text) if bot.is_owner(event) else help_text
-            ))
+            bot.send_msg(
+                    event.sender,
+                    'Chat with ' + bot.matrix_user,
+                    self.long_help(*args, is_owner=bot.is_owner(event))
+            )
 
         elif cmd in ['name', 'rename', 'nameshow', 'renameshow']:
             bot.must_be_owner(event)
@@ -156,3 +146,19 @@ class MatrixModule(BotModule):
 
     def help(self):
         return 'Commands for a show'
+
+    def long_help(self, *args, is_owner=False, is_admin=False):
+        text = [
+            'Usage: !show [cmd]',
+            '- !show help: Message you this help text',
+            '- !show live: Ask if a show is live for the current room',
+            '- !show suggest [your cool title]: Suggest a title for the current show'
+        ]
+        if is_owner:
+            text += [
+                '- !show (re)name [new show name]: Rename the show for the current room',
+                '- !show start[[new show name]]: Start the show for the current room',
+                '   Optional argument renames the show',
+                '- !show stop | !show end: Ends the currently running show',
+            ]
+        return '\n'.join(text)
