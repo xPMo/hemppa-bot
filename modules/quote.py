@@ -129,8 +129,9 @@ class MatrixModule(BotModule):
                 await bot.send_text(room, 'No such key: {}'.format(args[0]))
 
         else:
-            if cmd in ['get']:
-                args.pop(0)
+            if not cmd in ['get']:
+                # push cmd back into list
+                args.insert(0, cmd)
             self.logger.info(f"room: {room.name} sender: {event.sender} wants a quote")
             try:
                 quote = random.sample(self.get_quotes(*args), 1)[0]
