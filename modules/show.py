@@ -33,7 +33,7 @@ class MatrixModule(BotModule):
         try: 
             show = self.rooms[room.room_id]
         except:
-            self.logger.info(f"No show data for this room, creating defaults")
+            self.logger.info(f"No show data for {room.name}, creating defaults")
             self.rooms[room.room_id] = {
                     'title': room.name,
                     'is_live': False,
@@ -43,9 +43,12 @@ class MatrixModule(BotModule):
             show = self.rooms[room.room_id]
 
 
-        if cmd in ['name', 'showname', 'title', 'showtitle']:
+        if cmd in ['name', 'showname']:
+            bot.must_be_owner(event)
+
             self.logger.info(f"room: {room.name} sender: {event.sender} wants to rename a show")
             self.set_title(show, ' '.join(args))
+            bot.save_settings()
 
         elif cmd in ['start', 'startshow']:
             bot.must_be_owner(event)
@@ -67,6 +70,7 @@ class MatrixModule(BotModule):
 
         elif cmd in ['end', 'endshow']:
             bot.must_be_owner(event)
+
             title = self.get_title(show, room)
             if show['is_live']:
                 self.logger.info(f"room: {room.name} sender: {event.sender} is ending a show")
