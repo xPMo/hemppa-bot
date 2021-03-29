@@ -43,14 +43,14 @@ class MatrixModule(BotModule):
             show = self.rooms[room.room_id]
 
 
-        if cmd in ['name', 'showname']:
+        if cmd in ['name', 'rename', 'nameshow', 'renameshow']:
             bot.must_be_owner(event)
 
             self.logger.info(f"room: {room.name} sender: {event.sender} wants to rename a show")
             self.set_title(show, ' '.join(args))
             bot.save_settings()
 
-        elif cmd in ['start', 'startshow']:
+        elif cmd in ['begin', 'beginshow', 'start', 'startshow']:
             bot.must_be_owner(event)
 
             self.set_title(show, ' '.join(args))
@@ -68,7 +68,7 @@ class MatrixModule(BotModule):
                 show['suggestions'] = dict()
                 bot.save_settings()
 
-        elif cmd in ['end', 'endshow']:
+        elif cmd in ['end', 'endshow', 'stop', 'stopshow']:
             bot.must_be_owner(event)
 
             title = self.get_title(show, room)
