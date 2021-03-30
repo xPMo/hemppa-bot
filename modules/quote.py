@@ -8,18 +8,22 @@ class MatrixModule(BotModule):
         self.aliases = {}
         self.wildcards = [None, 'any', '*', '']
 
-    def get_settings(self):
-        data = super().get_settings()
-        data['quotes'] = self.quotes
-        data['aliases'] = self.aliases
-        return data
-
     def set_settings(self, data):
         super().set_settings(data)
         if data.get('aliases'):
             self.aliases = data['aliases']
         if data.get('quotes'):
             self.quotes = data['quotes']
+
+    def get_settings(self):
+        data = super().get_settings()
+        data['quotes'] = self.quotes
+        data['aliases'] = self.aliases
+        return data
+
+    def matrix_start(self, bot):
+        super().matrix_start(bot)
+        self.add_module_aliases(bot, *self.quotes.keys(), *self.aliases.keys())
 
     async def matrix_message(self, bot, room, event):
 
@@ -54,7 +58,9 @@ class MatrixModule(BotModule):
                 await bot.send_text(room, '{} already exists'.format(args[0]))
             else:
                 self.logger.info(f"room: {room.name} sender: {event.sender} is adding a key")
-                self.quotes[args[0].lower()] = []
+                key = args[0].lower()
+                self.quotes[key] = []
+                self.add_module_aliases(bot, key)
                 bot.save_settings()
                 await bot.send_text(room, 'Added {}'.format(args[0]))
 
