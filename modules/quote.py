@@ -23,7 +23,7 @@ class MatrixModule(BotModule):
 
     def matrix_start(self, bot):
         super().matrix_start(bot)
-        self.add_module_aliases(bot, *self.quotes.keys(), *self.aliases.keys())
+        self.add_module_aliases(bot, [*self.quotes.keys(), *self.aliases.keys()])
 
     async def matrix_message(self, bot, room, event):
 
@@ -58,7 +58,7 @@ class MatrixModule(BotModule):
                 self.logger.info(f"room: {room.name} sender: {event.sender} is adding a key")
                 key = args[0].lower()
                 self.quotes[key] = []
-                self.add_module_aliases(bot, key)
+                self.add_module_aliases(bot, [key])
                 bot.save_settings()
                 await bot.send_text(room, 'Added {}'.format(args[0]))
 

@@ -18,7 +18,7 @@ class MatrixModule(BotModule):
 
     def matrix_start(self, bot):
         super().matrix_start(bot)
-        self.add_module_aliases(bot, 'suggest', 'live')
+        self.add_module_aliases(bot, ['suggest', 'live'])
 
     async def matrix_message(self, bot, room, event):
 
