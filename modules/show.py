@@ -30,9 +30,8 @@ class MatrixModule(BotModule):
         if cmd[0] == '!':
             cmd = cmd[1:]
 
-        # Setup: 
         if cmd in ['setup']:
-            bot.is_admin(event)
+            bot.must_be_admin(room, event)
 
             self.logger.info(f"Reset all data relating to a show in this room")
             self.rooms[room.room_id] = {
