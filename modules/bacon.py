@@ -10,7 +10,7 @@ class MatrixModule(BotModule):
         else:
             target = ' '.join(args)
         self.logger.debug(f"room: {room.name} sender: {event.sender} asked for bacon")
-        await bot.send_text(room, f"gives {target} a strip of bacon 🥓", msgtype="m.emote")
+        await bot.send_text(room, f"gives {target} a strip of delicious bacon 🥓", msgtype="m.emote")
 
     def help(self):
         return 'Ask for a strip of bacon'
