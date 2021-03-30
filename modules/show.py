@@ -16,6 +16,10 @@ class MatrixModule(BotModule):
         if data.get('rooms'):
             self.rooms = data['rooms']
 
+    def matrix_start(self, bot):
+        super().matrix_start(bot)
+        self.add_module_aliases(bot, 'suggest', 'live')
+
     async def matrix_message(self, bot, room, event):
 
         args = event.body.split()
@@ -50,7 +54,7 @@ class MatrixModule(BotModule):
         if cmd in ['help']:
             self.logger.info(f"room: {room.name} sender: {event.sender} asked for show help")
 
-            bot.send_msg(
+            await bot.send_msg(
                     event.sender,
                     'Chat with ' + bot.matrix_user,
                     self.long_help(bot, room, event, *args)
