@@ -21,48 +21,50 @@ class MatrixModule(BotModule):
         args = event.body.split()
 
         cmd = args.pop(0).lower()
-        if cmd == f'!{self.name}':
-            try:
-                cmd = args.pop(0).lower()
-            except (ValueError,IndexError):
-                cmd = '!'
+        if cmd == f'!{self.name}' and len(args):
+            cmd = args.pop(0).lower()
         if cmd[0] == '!':
             cmd = cmd[1:]
+
+        # Setup: 
+        if cmd in ['setup']:
+            bot.is_admin(event)
+
+            self.logger.info(f"Reset all data relating to a show in this room")
+            self.rooms[room.room_id] = {
+                    'title': ' '.join(args) or room.name,
+                    'is_live': False,
+                    'suggestions': dict()
+            }
+            bot.save_settings()
+            show = self.rooms[room.room_id]
+            return
 
         # This room's show data
         try: 
             show = self.rooms[room.room_id]
         except:
-            if bot.is_owner(event):
-                self.logger.info(f"No show data for {room.name}, creating defaults")
-                self.rooms[room.room_id] = {
-                        'title': room.name,
-                        'is_live': False,
-                        'suggestions': dict()
-                }
-                bot.save_settings()
-                show = self.rooms[room.room_id]
-            else:
-                return
+            # ignore !show commands
+            return
 
-        if cmd in ['help', '-help', '--help']:
+        if cmd in ['help']:
             self.logger.info(f"room: {room.name} sender: {event.sender} asked for show help")
 
             bot.send_msg(
                     event.sender,
                     'Chat with ' + bot.matrix_user,
-                    self.long_help(*args, is_owner=bot.is_owner(event))
+                    self.long_help(bot, room, event, *args)
             )
 
         elif cmd in ['name', 'rename', 'nameshow', 'renameshow']:
-            bot.must_be_owner(event)
+            bot.must_be_admin(room, event)
 
             self.logger.info(f"room: {room.name} sender: {event.sender} wants to rename a show")
             self.set_title(show, ' '.join(args))
             bot.save_settings()
 
         elif cmd in ['begin', 'beginshow', 'start', 'startshow']:
-            bot.must_be_owner(event)
+            bot.must_be_admin(room, event)
 
             self.set_title(show, ' '.join(args))
             title = self.get_title(show, room)
@@ -80,7 +82,7 @@ class MatrixModule(BotModule):
                 bot.save_settings()
 
         elif cmd in ['end', 'endshow', 'stop', 'stopshow']:
-            bot.must_be_owner(event)
+            bot.must_be_admin(room, event)
 
             title = self.get_title(show, room)
             if show['is_live']:
@@ -147,18 +149,19 @@ class MatrixModule(BotModule):
     def help(self):
         return 'Commands for a show'
 
-    def long_help(self, *args, is_owner=False, is_admin=False):
+    def long_help(self, bot, room, event, *args):
         text = [
             'Usage: !show [cmd]',
-            '- !show help: Message you this help text',
-            '- !show live: Ask if a show is live for the current room',
+            '- !show help: Reply with this help text',
+            '- !show live: Ask if there is a show live in the current room',
             '- !show suggest [your cool title]: Suggest a title for the current show'
         ]
-        if is_owner:
+        if bot.is_admin(room, event):
             text += [
+                'Admin commands:',
                 '- !show (re)name [new show name]: Rename the show for the current room',
-                '- !show start[[new show name]]: Start the show for the current room',
+                '- !show start [[new show name]]: Start the show for the current room',
                 '   Optional argument renames the show',
-                '- !show stop | !show end: Ends the currently running show',
+                '- !show (stop|end): Ends the currently running show',
             ]
         return '\n'.join(text)
