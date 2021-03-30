@@ -33,9 +33,9 @@ class MatrixModule(BotModule):
             if cmd in ['!' + self.name, self.name]:
                 cmd, body = body.split(None, 1)
         except ValueError:
-            cmd = body
-        if cmd[0] == '!':
-            cmd = cmd[1:]
+            cmd = body.strip()
+            body = ''
+        cmd = cmd.lstrip('!')
 
         if cmd == 'wipeallquotes':
             bot.must_be_owner(event)
@@ -76,7 +76,9 @@ class MatrixModule(BotModule):
                     args[1] = self.aliases[args[1]]
                 if self.quotes.get(args[1]) is not None:
                     self.logger.info(f"room: {room.name} sender: {event.sender} is adding an alias")
-                    self.aliases[args[0].lower()] = args[1].lower()
+                    key = args[0].lower()
+                    self.aliases[key] = args[1].lower()
+                    self.add_module_aliases(bot, [key])
                     bot.save_settings()
                     await bot.send_text(room, 'Added {} as alias for {}'.format(args[0], args[1]))
                 else:
@@ -129,21 +131,17 @@ class MatrixModule(BotModule):
                 await bot.send_text(room, 'No such key: {}'.format(args[0]))
 
         else:
-            args = body.split()
-            if cmd not in ['get']:
-                # push cmd back into list
-                args.insert(0, cmd)
 
             self.logger.info(f"room: {room.name} sender: {event.sender} wants a quote")
             try:
-                quote = random.sample(self.get_quotes(*args), 1)[0]
+                quote = random.sample(self.get_quotes(cmd, *body.split()), 1)[0]
                 await bot.send_text(room, f'"{quote}"', msgtype='m.text')
             except TypeError:
                 await bot.send_text(room, 'Missing argument')
             except ValueError:
                 await bot.send_text(room, 'No such quote found')
             except KeyError:
-                await bot.send_text(room, 'Not a valid key: {}. Try using "any" as a key.'.format(args[0]))
+                await bot.send_text(room, 'Not a valid key: {}. Try using "any" as a key.'.format(cmd))
 
     def get_quotes(self, key, *criteria):
         """Returns a list of quotes which contains all strings from criteria
