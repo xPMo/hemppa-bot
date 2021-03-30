@@ -27,13 +27,13 @@ class MatrixModule(BotModule):
 
     async def matrix_message(self, bot, room, event):
 
-        cmd, body = event.body.split(None, 1)
-
-        if cmd in ['!' + self.name, self.name]:
-            try:
+        body = event.body
+        try:
+            cmd, body = body.split(None, 1)
+            if cmd in ['!' + self.name, self.name]:
                 cmd, body = body.split(None, 1)
-            except ValueError:
-                cmd = body
+        except ValueError:
+            cmd = body
         if cmd[0] == '!':
             cmd = cmd[1:]
 
