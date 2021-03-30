@@ -27,14 +27,13 @@ class MatrixModule(BotModule):
 
     async def matrix_message(self, bot, room, event):
 
-        args = event.body.split()
+        cmd, body = event.body.split(None, 1)
 
-        cmd = args.pop(0).lower()
-        if cmd == f'!{self.name}':
+        if cmd in ['!' + self.name, self.name]:
             try:
-                cmd = args.pop(0).lower()
-            except (ValueError,IndexError):
-                cmd = '!'
+                cmd, body = body.split(None, 1)
+            except ValueError:
+                cmd = body
         if cmd[0] == '!':
             cmd = cmd[1:]
 
@@ -49,8 +48,7 @@ class MatrixModule(BotModule):
 
         elif cmd in ['addname', 'addkey']:
             bot.must_be_owner(event)
-            args.pop(0)
-            args = [s.lower() for s in args]
+            args = body.split()
 
             if len(args) != 1:
                 await bot.send_text(room, f'{cmd} takes exactly one argument')
@@ -67,8 +65,7 @@ class MatrixModule(BotModule):
 
         elif cmd in ['addalias', 'alias']:
             bot.must_be_owner(event)
-            args.pop(0)
-            args = [s.lower() for s in args]
+            args = body.split()
 
             if len(args) != 2:
                 await bot.send_text(room, f'{cmd} takes exactly two arguments')
@@ -87,24 +84,21 @@ class MatrixModule(BotModule):
 
         elif cmd in ['list', 'ls', 'l']:
             bot.must_be_owner(event)
-            args.pop(0)
 
             self.logger.info(f"room: {room.name} sender: {event.sender} wants to list quotes")
-            if len(args) == 0:
-                await bot.send_text(room, '\n'.join(self.quotes.keys()))
-            else:
+            if body:
                 try:
-                    await bot.send_text(room, '\n'.join(self.get_quotes(*args)))
+                    await bot.send_text(room, '\n'.join(self.get_quotes(*body.split())))
                 except:
                     await bot.send_text(room, 'No matching quote')
+            else:
+                await bot.send_text(room, '\n'.join(self.quotes.keys()))
 
         elif cmd in ['add', 'a', 'new']:
             bot.must_be_owner(event)
-            args.pop(0)
 
             try:
-                key = args.pop(0)
-                body = ' '.join(args)
+                key, body = body.split(None, 1)
                 self.add_quote(key, body)
                 bot.save_settings()
                 await bot.send_text(room, f'Added to {key} quotes: {body}.')
@@ -116,12 +110,12 @@ class MatrixModule(BotModule):
 
         elif cmd in ['remove', 'rm', 'r']:
             bot.must_be_owner(event)
-            args.pop(0)
 
             try:
-                key = args.pop(0)
-                quotes = self.quotes[self.aliases.get(key) or key]
-                l = self.get_quotes(key, *args)
+                args = body.split()
+                quotes = self.quotes[args[0]]
+
+                l = self.get_quotes(*args)
                 if len(l) == 0:
                     await bot.send_text(room, 'No matching quote')
                 elif len(l) > 1:
@@ -135,9 +129,11 @@ class MatrixModule(BotModule):
                 await bot.send_text(room, 'No such key: {}'.format(args[0]))
 
         else:
-            if not cmd in ['get']:
+            args = body.split()
+            if cmd not in ['get']:
                 # push cmd back into list
                 args.insert(0, cmd)
+
             self.logger.info(f"room: {room.name} sender: {event.sender} wants a quote")
             try:
                 quote = random.sample(self.get_quotes(*args), 1)[0]
