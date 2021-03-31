@@ -170,4 +170,4 @@ class MatrixModule(BotModule):
         return key in self.wildcards or key in self.aliases.keys() or key in self.quotes.keys()
 
     def help(self):
-        return 'Print an rms quote'
+        return 'Print or manage quotes (add, remove, addname, addalias)'
