@@ -52,7 +52,10 @@ class MatrixModule(BotModule):
 
         else:
             self.logger.info(f"room: {room.name} sender: {event.sender} wants to eval some code")
+
             lang, code  = self.get_code(event.formatted_body)
+            # !eval [lang]
+            lang = lang or self.get_lang(cmd)
             html, plain = self.run_code(lang, code)
             await bot.send_html(room, html, plain)
 
@@ -69,7 +72,7 @@ class MatrixModule(BotModule):
                 break
         else:
             block = blocks[0]
-            lang = self.get_lang('default')
+            lang = None
         return (lang, block.contents[0].string)
 
     def get_lang(self, s):
