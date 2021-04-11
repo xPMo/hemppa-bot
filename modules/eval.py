@@ -99,9 +99,10 @@ class MatrixModule(BotModule):
     def code_block(self, header, text):
         if text:
             return (
-                f'<p><strong>{escape(header)}: </strong></p><pre><code>'
+                f'<p><strong>{escape(header)}: </strong></p><pre><code class="language-txt">'
                 + escape(text) + '</code></pre>',
-                '\n> '.join([header] + text.split('\n'))
+                # use markdown-style blocks for clients which parse it from event.body
+                '\n'.join([header, '```', text.rstrip(), '```'])
             )
         else:
             return (f'<p><em>no {escape(header)}</em>', f'(no {header})')
