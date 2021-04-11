@@ -1,7 +1,7 @@
 from modules.common.module import BotModule
 from bs4 import BeautifulSoup
 from html import escape
-from subprocess import Popen, PIPE
+from subprocess import run, PIPE
 
 class MatrixModule(BotModule):
     def __init__(self, name):
@@ -70,7 +70,7 @@ class MatrixModule(BotModule):
                     await bot.send_text(room, f'{args[1]} must be a positive integer')
                     return
             # string values
-            elif args[1] in ['container']:
+            elif args[1] in ['container', 'memory', 'pids', 'net', 'workdir']:
                 val = args[2]
             # list values
             elif args[1] in ['podman_opts', 'command']:
@@ -91,7 +91,8 @@ class MatrixModule(BotModule):
             lang, code  = self.get_code(event.formatted_body)
             # !eval [lang]
             lang = self.get_lang(cmd) or lang
-            html, plain = self.run_code(lang, code)
+            opts = [f'--label={cmd}-{room.name}-{event.sender}']
+            html, plain = self.run_code(lang, code, podman_opts=opts)
             await bot.send_html(room, html, plain)
 
     def get_code(self, html_body):
@@ -114,21 +115,29 @@ class MatrixModule(BotModule):
         # Python 3.9
         return self.langmap.get(s.removeprefix('language-'))
 
-    def run_code(self, lang, code, podman_opts=[], timeout=15):
+    def run_code(self, lang, code, podman_opts=[]):
         container = lang['container']
         cmd = lang['command']
         self.logger.info(f"Running in podman {container} with {cmd}")
 
-        timeout = lang.get('timeout') or timeout
-        podman_opts = lang.get('podman_opts') or podman_opts
+        # set limits
+        timeout = lang.get('timeout') or 15
+        net = lang.get('net') or 'none'
+        pids = lang.get('pids-limit') or 64
+        mem = lang.get('memory') or '32M'
+        workdir = lang.get('workdir') or '/'
 
-        proc = Popen(['podman', 'run', '--rm', '-i', '--net=none', '--workdir=/root']
-            + podman_opts + [container] + cmd,
-            stdin=PIPE, stdout=PIPE, stderr=PIPE)
-        stdout, stderr = proc.communicate(input=code.encode('utf-8'), timeout=timeout)
-        return ('\n'.join(i) for i in
-            zip(self.code_block('stdout', stdout.decode()), self.code_block('stderr', stderr.decode()))
-        )
+        podman_opts += [f'--pids-limit={pids}', f'--memory={mem}', f'--net={net}', f'--workdir={workdir}']
+        podman_opts += lang.get('podman_opts') or []
+
+        proc = run(['podman', 'run', '--rm', '-i'] + podman_opts + [container] + cmd,
+                input=code.encode('utf-8'), stdout=PIPE, stderr=PIPE, timeout=timeout)
+        parts = [self.code_block('stdout', proc.stdout.decode()), self.code_block('stderr', proc.stderr.decode())]
+        if proc.returncode != 0:
+            parts.insert(0, (f'<p><strong>Process exited non-zero</strong>: <code>{proc.returncode}</code></p>',
+                    f'(Process exited non-zero: {proc.returncode})'))
+
+        return ('\n'.join(i) for i in zip(*parts))
 
     def code_block(self, header, text):
         if text:
@@ -143,3 +152,4 @@ class MatrixModule(BotModule):
 
     def help(self):
         return 'Evaluate code blocks or !addlang [image] [cmd ...]'
+
