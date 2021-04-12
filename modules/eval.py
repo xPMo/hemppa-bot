@@ -134,16 +134,15 @@ class MatrixModule(BotModule):
         return {'send_html': ('\n'.join(i) for i in zip(*parts))}
 
     async def matrix_message(self, bot, room, event):
-        body = event.body
         try:
-            cmd, body = body.split(None, 1)
+            cmd, event.body = event.body.split(None, 1)      # [!cmd] [(!)subcmd body]
             if cmd in ['!' + self.name, self.name]:
-                cmd, body = body.split(None, 1)
+                cmd, event.body = event.body.split(None, 1)  # [!subcmd] [body]
         except ValueError:
-            cmd = body.strip()
-            body = ''
+            # couldn't split, not enough arguments in body
+            cmd = event.body.strip()
+            event.body = ''
         cmd = cmd.lstrip('!')
-        event.body = body
 
         op = self.commands.get(cmd) or self.commands['default']
         for key, val in op(bot, cmd, event).items():
@@ -152,14 +151,13 @@ class MatrixModule(BotModule):
             elif key == 'send_html':
                 html, plain = val
                 await bot.send_html(room, html, plain)
-            elif key == 'save_settings':
+            elif key == 'save_settings' and val:
                 bot.save_settings()
 
     def get_code(self, cmd, event):
+        lang = self.get_lang(cmd)
         try:
             blocks = BeautifulSoup(event.formatted_body, features='html.parser').find_all('code')
-            if not blocks:
-                return None
             for block in blocks:
                 c = block.get('class')
                 if not c:
@@ -169,12 +167,10 @@ class MatrixModule(BotModule):
                     break
             else:
                 block = blocks[0]
-                lang = self.get_lang(cmd)
             return (lang, block.contents[0].string)
-        except AttributeError:
-            # No formatted_body
-            pass
-
+        except (AttributeError, IndexError):
+            # No formatted_body or no <code> block, use event.body instead
+            return (lang, event.body)
 
     def get_lang(self, s):
         # Python 3.9
