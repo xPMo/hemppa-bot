@@ -53,11 +53,7 @@ class MatrixModule(BotModule):
         if cmd in ['help']:
             self.logger.info(f"room: {room.name} sender: {event.sender} asked for show help")
 
-            await bot.send_msg(
-                    event.sender,
-                    'Chat with ' + bot.matrix_user,
-                    self.long_help(bot, room, event, *args)
-            )
+            await bot.send_text(room, self.long_help(bot=bot, room=room, event=event, args=([cmd] + args)))
 
         elif cmd in ['name', 'rename', 'nameshow', 'renameshow']:
             bot.must_be_admin(room, event)
@@ -152,14 +148,14 @@ class MatrixModule(BotModule):
     def help(self):
         return 'Commands for a show'
 
-    def long_help(self, bot, room, event, *args):
+    def long_help(self, bot=None, room=None, event=None, **kwargs):
         text = [
-            'Usage: !show [cmd]',
+            self.help(),
             '- !show help: Reply with this help text',
             '- !show live: Ask if there is a show live in the current room',
             '- !show suggest [your cool title]: Suggest a title for the current show'
         ]
-        if bot.is_admin(room, event):
+        if bot and room and event and bot.is_admin(room, event):
             text += [
                 'Admin commands:',
                 '- !show (re)name [new show name]: Rename the show for the current room',
