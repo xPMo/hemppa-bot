@@ -12,7 +12,6 @@ class MatrixModule(BotModule):
                 **dict.fromkeys(['add', 'new', 'addlang', 'newlang'], self.add_lang),
                 **dict.fromkeys(['rm', 'remove', 'rmlang', 'delete'], self.rm_lang),
                 **dict.fromkeys(['alias', 'aliaslang'], self.alias_lang),
-                'default': self.run_code
         }
 
     def set_settings(self, data):
@@ -144,7 +143,7 @@ class MatrixModule(BotModule):
             event.body = ''
         cmd = cmd.lstrip('!')
 
-        op = self.commands.get(cmd) or self.commands['default']
+        op = self.commands.get(cmd) or self.run_code
         for key, val in op(bot, cmd, event).items():
             if key == 'send_text':
                 await bot.send_text(room, val)
@@ -155,7 +154,7 @@ class MatrixModule(BotModule):
                 bot.save_settings()
 
     def get_code(self, cmd, event):
-        lang = self.get_lang(cmd)
+        lang = None
         try:
             blocks = BeautifulSoup(event.formatted_body, features='html.parser').find_all('code')
             for block in blocks:
@@ -167,14 +166,16 @@ class MatrixModule(BotModule):
                     break
             else:
                 block = blocks[0]
-            return (lang, block.contents[0].string)
+            return (lang or self.get_lang(cmd), block.contents[0].string)
         except (AttributeError, IndexError):
             # No formatted_body or no <code> block, use event.body instead
-            return (lang, event.body)
+            return (self.get_lang(cmd), event.body)
 
     def get_lang(self, s):
         # Python 3.9
-        return self.langmap.get(s.removeprefix('language-'))
+        s = s.removeprefix('language-')
+        s = self.aliases.get(s) or s
+        return self.langmap.get(s)
 
     def code_block(self, header, text):
         if text:
