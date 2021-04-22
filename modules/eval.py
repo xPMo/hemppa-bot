@@ -12,6 +12,7 @@ class MatrixModule(BotModule):
                 **dict.fromkeys(['add', 'new', 'addlang', 'newlang'], self.add_lang),
                 **dict.fromkeys(['rm', 'remove', 'rmlang', 'delete'], self.rm_lang),
                 **dict.fromkeys(['alias', 'aliaslang'], self.alias_lang),
+                **dict.fromkeys(['set', 'setlang', 'prop', 'property'], self.set_lang_prop),
         }
 
     def set_settings(self, data):
@@ -31,7 +32,7 @@ class MatrixModule(BotModule):
         super().matrix_start(bot)
         self.add_module_aliases(bot, [*self.aliases.keys(), *self.langmap.keys()])
 
-    def add_lang(self, cmd, event):
+    def add_lang(self, bot, cmd, event):
         bot.must_be_owner(event)
         self.logger.info(f"sender: {event.sender} wants to add a language")
         args = event.body.split()
@@ -79,7 +80,7 @@ class MatrixModule(BotModule):
     def set_lang_prop(self, bot, cmd, event):
         bot.must_be_owner(event)
         self.logger.info(f"sender: {event.sender} wants to modify a language")
-        args = body.split()
+        args = event.body.split()
 
         if len(args) < 3:
             return {'send_text': f'Usage: {cmd} [lang] [property] [value ...].'}
