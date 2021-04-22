@@ -126,7 +126,7 @@ class MatrixModule(BotModule):
 
         proc = run(['podman', 'run', '--rm', '-i'] + podman_opts + [container] + podman_cmd,
                 input=code.encode('utf-8'), stdout=PIPE, stderr=PIPE, timeout=timeout)
-        parts = [self.code_block('stdout', proc.stdout.decode()), self.code_block('stderr', proc.stderr.decode())]
+        parts = [self.code_block('stdout', proc.stdout.decode().strip()), self.code_block('stderr', proc.stderr.decode().strip())]
         if proc.returncode != 0:
             parts.insert(0, (f'<p><strong>Process exited non-zero</strong>: <code>{proc.returncode}</code></p>',
                     f'(Process exited non-zero: {proc.returncode})'))
