@@ -13,6 +13,7 @@ class MatrixModule(BotModule):
                 **dict.fromkeys(['rm', 'remove', 'rmlang', 'delete'], self.rm_lang),
                 **dict.fromkeys(['alias', 'aliaslang'], self.alias_lang),
                 **dict.fromkeys(['set', 'setlang', 'prop', 'property'], self.set_lang_prop),
+                **dict.fromkeys(['get', 'getlang', 'getprop'], self.get_lang_prop),
         }
 
     def set_settings(self, data):
@@ -105,6 +106,19 @@ class MatrixModule(BotModule):
 
         lang[args[1]] = val
         return {'send_text': f'Set property {args[1]} for {args[0]}', 'save_settings': True}
+
+    def get_lang_prop(self, bot, cmd, event):
+        self.logger.info(f"sender: {event.sender} wants to list a language's properties")
+        args = event.body.split()
+
+        lang = self.get_lang(args[0])
+        if not lang:
+            return {'send_text': f'{lang} has not been added.'}
+
+        ret = [f'{args[0]}:']
+        for key, val in lang.items():
+            ret.append(f'- {key}: {val}')
+        return {'send_text': '\n'.join(ret)}
 
     def run_code(self, bot, cmd, event):
         self.logger.info(f"sender: {event.sender} wants to eval some code")
