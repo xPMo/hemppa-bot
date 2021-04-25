@@ -9,9 +9,19 @@ class MatrixModule(BotModule):
         super().__init__(name)
         self.bacons = [
             (
-                0.99,
+                0.98,
+                'gives {} TWO strips of bacon 🥓🥓',
+                'gives {} <strong>two</strong> strips of bacon 🥓🥓'
+            ),
+            (
+                0.96,
                 'gives {} a strip of immaculately cooked bacon 🥓',
                 'gives {} a strip of <em>immaculately cooked</em> bacon 🥓'
+            ),
+            (
+                0.92,
+                'gives {} a strip of succulent bacon 🥓',
+                'gives {} a strip of <em>succulent</em> bacon 🥓'
             ),
             (
                 0.04,
@@ -37,7 +47,7 @@ class MatrixModule(BotModule):
                 0,
                 "EmptySkilletException: Bacon not found",
                 "<strong>EmptySkilletException: Bacon not found</strong>"
-            )
+            ),
         ]
 
     async def matrix_message(self, bot, room, event):
