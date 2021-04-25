@@ -2,7 +2,7 @@ from modules.common.module import BotModule
 import random
 import socket
 from struct import pack, unpack
-import datetime
+import time
 
 # Modified from https://gist.github.com/azlux/315c924af4800ffbc2c91db3ab8a59bc
 
@@ -51,11 +51,12 @@ class MatrixModule(BotModule):
             # https://wiki.mumble.info/wiki/Protocol
             # [0,1,2,3] = version
             version = '.'.join(map(str, ret[1:4]))
-            # [4] = indentifier passed to the server
+            # [4] = identifier passed to the server (used here to get ping time)
+            ping = int(time.time() * 1000) - ret[4]
             # [7] = bandwidth
             # [5] = users
             # [6] = max users
-            await bot.send_text(room, f'{self.host}:{self.port} (v{version}): {ret[5]} / {ret[6]}')
+            await bot.send_text(room, f'{self.host}:{self.port} (v{version}): {ret[5]} / {ret[6]} (ping: {ping}ms)')
         except socket.gaierror as e:
             self.logger.error(f"room: {room.name}: mumble_ping failed: {e}")
             await bot.send_text(room, f'Could not get get mumble server info: {e}')
@@ -68,7 +69,7 @@ class MatrixModule(BotModule):
             s = socket.socket(family, socktype, proto=proto)
             s.settimeout(2)
 
-            buf = pack(">iQ", 0, datetime.datetime.now().microsecond)
+            buf = pack(">iQ", 0, int(time.time() * 1000))
             try:
                 s.sendto(buf, sockaddr)
             except (socket.gaierror, socket.timeout) as e:
