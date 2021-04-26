@@ -190,7 +190,7 @@ class MatrixModule(BotModule):
                 return
             # Make sure the class ends with '!'
             lang, code = self.get_code_html(event.formatted_body,
-                    match_class=(lambda s: s[-1] == '!'))
+                    match_class=self.cb_match_class)
             if not lang:
                 return
             self.logger.info(f"sender: {event.sender} wants to eval some code")
@@ -198,7 +198,7 @@ class MatrixModule(BotModule):
             return await self.bot.send_html(room, html, plain)
         except Exception as e:
             # No formatted body
-            self.logger.warning('unexpected exception in callback: {repr(e)}')
+            self.logger.warning(f'unexpected exception in callback: {repr(e)}')
 
     async def matrix_message(self, bot, room, event):
         try:
@@ -265,6 +265,9 @@ class MatrixModule(BotModule):
         name = self.aliases.get(name) or name
         return self.langmap.get(name)
 
+    def cb_match_class(self, s):
+        return s.startswith('language-!') or s[-1] == '!'
+
     def code_block(self, header, text):
         if text:
             return (
@@ -290,7 +293,8 @@ class MatrixModule(BotModule):
                 '\n- ... [marked-codeblock] ...: run code (see below)'
                 )
         if bot and event and bot.is_owner(event):
-            text += ('\n- !eval (add|new) [lang] [container] [command ...]: add an new language'
+            text += ('Bot owner commands:'
+                     '\n- !eval (add|new) [lang] [container] [command ...]: add an new language'
                      '\n- !eval alias [name] [lang]: add an alias [name] for [lang]'
                      '\n- !eval (set|setprop) [lang] [property] [value]: alter a language'
                      '\n- !eval (remove|rm) [name]: remove a language, or alias to a language'
