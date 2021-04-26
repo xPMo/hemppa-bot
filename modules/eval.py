@@ -242,6 +242,9 @@ class MatrixModule(BotModule):
     def get_code_html(self, html, match_class=None):
         lang   = None
         soup   = BeautifulSoup(html, features='html.parser')
+        for block in soup.find_all('mx-reply'):
+            block.decompose()
+        soup.find
         blocks = soup.find_all('code')
         for block in blocks:
             clss = block.get('class')
