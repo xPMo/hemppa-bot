@@ -19,7 +19,7 @@ class MatrixModule(BotModule):
                 **dict.fromkeys(['set', 'setlang', 'setprop'], self.set_lang_prop),
                 **dict.fromkeys(['get', 'getlang', 'getprop'], self.get_lang_prop),
                 **dict.fromkeys(['list', 'ls', 'langs'], self.list_langs),
-                **dict.fromkeys(['run'], self.run_code),
+                **dict.fromkeys(['run'], self.cmd_code),
         }
 
     def set_settings(self, data):
@@ -156,13 +156,69 @@ class MatrixModule(BotModule):
             msg = '\n'.join(msg)
         await bot.send_text(room, msg)
 
-    async def run_code(self, bot, room, event, cmd):
-        self.logger.info(f"sender: {event.sender} wants to eval some code")
-        lang, code = self.get_code(cmd, event)
+    async def cmd_code(self, bot, room, event, cmd):
+        try:
+            self.logger.info(f"sender: {event.sender} wants to eval some code")
+            lang, code = self.get_code_html(event.formatted_body)
+            lang = lang or self.get_lang(cmd)
+        except AttributeError:
+            # No formatted_body
+            code = event.body
+            lang = lang or self.get_lang(cmd)
+        if not lang:
+            return await bot.send_text(room, f'No matching language')
+        html, plain = self.run_code(lang, code, f'eval-{event.sender}')
+        return await bot.send_html(room, html, plain)
+
+    async def message_cb(self, room, event):
+        """
+        Handle client callbacks for all room text events
+        """
+        if self.bot.should_ignore_event(event):
+            return
+
+        content = event.source.get('content')
+        if not content:
+            return
+
+        # Don't re-run edited messages
+        if "m.new_content" in content:
+            return
+        try:
+            #print(type(event.formatted_body), event.formatted_body)
+            if not event.formatted_body:
+                return
+            # Make sure the class ends with '!'
+            lang, code = self.get_code_html(event.formatted_body,
+                    match_class=(lambda s: s[-1] == '!'))
+            if not lang:
+                return
+            self.logger.info(f"sender: {event.sender} wants to eval some code")
+            html, plain = self.run_code(lang, code, f'eval-{event.sender}')
+            return await self.bot.send_html(room, html, plain)
+        except Exception as e:
+            # No formatted body
+            self.logger.warning('unexpected exception in callback: {repr(e)}')
+
+    async def matrix_message(self, bot, room, event):
+        try:
+            cmd, event.body = event.body.split(None, 1)      # [!cmd] [(!)subcmd body]
+            if cmd in ['!' + self.name, self.name]:
+                cmd, event.body = event.body.split(None, 1)  # [!subcmd] [body]
+        except ValueError:
+            # couldn't split, not enough arguments in body
+            cmd = event.body.strip()
+            event.body = ''
+        cmd = cmd.lstrip('!')
+
+        op = self.commands.get(cmd) or self.cmd_code
+        await op(bot, room, event, cmd)
+
+    def run_code(self, lang, code, label):
         container = lang['container']
         podman_cmd = lang['command']
         self.logger.info(f"Running in podman {container} with {podman_cmd}")
-        podman_opts = [f'--label={cmd}-{event.sender}']
+        podman_opts = [f'--label={label}']
 
         # set limits
         timeout = lang.get('timeout') or 15
@@ -181,69 +237,33 @@ class MatrixModule(BotModule):
             parts.insert(0, (f'<p><strong>Process exited non-zero</strong>: <code>{proc.returncode}</code></p>',
                     f'(Process exited non-zero: {proc.returncode})'))
 
-        html, plain = ('\n'.join(i) for i in zip(*parts))
-        await bot.send_html(room, html, plain)
+        return ('\n'.join(i) for i in zip(*parts))
 
-    async def message_cb(self, room, event):
-        """
-        Handle client callbacks for all room text events
-        """
-        if self.bot.should_ignore_event(event):
-            return
-
-        # no content at all?
-        if len(event.body) < 1:
-            return
-
-        if "content" in event.source:
-            # skip edited content to prevent spamming the same thing multiple times
-            if "m.new_content" in event.source["content"]:
-                self.logger.debug("Skipping edited event to prevent spam")
-                return
-            # skip reply messages to prevent spam
-            if "m.relates_to" in event.source["content"]:
-                self.logger.debug("Skipping reply message to prevent spam")
-                return
-        # TODO
-        return
-
-    async def matrix_message(self, bot, room, event):
-        try:
-            cmd, event.body = event.body.split(None, 1)      # [!cmd] [(!)subcmd body]
-            if cmd in ['!' + self.name, self.name]:
-                cmd, event.body = event.body.split(None, 1)  # [!subcmd] [body]
-        except ValueError:
-            # couldn't split, not enough arguments in body
-            cmd = event.body.strip()
-            event.body = ''
-        cmd = cmd.lstrip('!')
-
-        op = self.commands.get(cmd) or self.run_code
-        await op(bot, room, event, cmd)
-
-    def get_code(self, cmd, event):
-        lang = None
-        try:
-            blocks = BeautifulSoup(event.formatted_body, features='html.parser').find_all('code')
-            for block in blocks:
-                c = block.get('class')
-                if not c:
+    def get_code_html(self, html, match_class=None):
+        lang   = None
+        soup   = BeautifulSoup(html, features='html.parser')
+        blocks = soup.find_all('code')
+        for block in blocks:
+            clss = block.get('class')
+            if not clss:
+                continue
+            for cls in block.get('class'):
+                if match_class and not match_class(cls):
                     continue
-                lang = self.get_lang(c[0])
+                lang = self.get_lang(cls)
                 if lang:
-                    break
-            else:
-                block = blocks[0]
-            return (lang or self.get_lang(cmd), block.contents[0].string)
-        except (AttributeError, IndexError):
-            # No formatted_body or no <code> block, use event.body instead
-            return (self.get_lang(cmd), event.body)
+                    return (lang, block.contents[0].string)
+        return (None, blocks[0].contents[0].string)
 
-    def get_lang(self, s):
+    def get_lang(self, name):
         # Python 3.9
-        s = s.removeprefix('language-')
-        s = self.aliases.get(s) or s
-        return self.langmap.get(s)
+        name = (name
+            .removeprefix('language-')
+            .removeprefix('!eval')
+            .removesuffix('!')
+        )
+        name = self.aliases.get(name) or name
+        return self.langmap.get(name)
 
     def code_block(self, header, text):
         if text:
@@ -267,6 +287,7 @@ class MatrixModule(BotModule):
                 '\n- !eval run [lang] [code]: run code (see below)'
                 '\n- !eval[lang] [code]: run code (see below)'
                 '\n- ![lang] [code]: run code (see below)'
+                '\n- ... [marked-codeblock] ...: run code (see below)'
                 )
         if bot and event and bot.is_owner(event):
             text += ('\n- !eval (add|new) [lang] [container] [command ...]: add an new language'
@@ -280,5 +301,8 @@ class MatrixModule(BotModule):
                  '\n    Otherwise, the first codeblock (inline or otherwise) is used'
                  'with the language given in one of the forms above.'
                  '\n    If no codeblock is found, then the remaining body after [lang] is interpreted as code.'
+                 '\nMarked codeblock:'
+                 '\n    A marked codeblock contains a formatted_body with a <code class="language-[lang]!"> block.'
+                 '\n    Your markdown editor can probably produce such a code block with ```[lang]!'
                  )
         return text
