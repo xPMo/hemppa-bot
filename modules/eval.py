@@ -232,7 +232,12 @@ class MatrixModule(BotModule):
 
         proc = run(['podman', 'run', '--rm', '-i'] + podman_opts + [container] + podman_cmd,
                 input=code.encode('utf-8'), stdout=PIPE, stderr=PIPE, timeout=timeout)
-        parts = [self.code_block('stdout', proc.stdout.decode().strip('\n')), self.code_block('stderr', proc.stderr.decode().strip('\n'))]
+        stdout = self.code_block(proc.stdout.decode().strip('\n'))
+        stderr = self.code_block(proc.stderr.decode().strip('\n'))
+        if not stdout and not stderr:
+            parts = [('<em>no stdout or stderr</em>', 'no stdout or stderr')]
+        else:
+            parts = [stdout or ('<em>no stdout</em>', 'no stdout'), stderr or ('<em>no stderr</em>', 'no stderr')]
         if proc.returncode != 0:
             parts.insert(0, (f'<p><strong>Process exited non-zero</strong>: <code>{proc.returncode}</code></p>',
                     f'(Process exited non-zero: {proc.returncode})'))
@@ -271,16 +276,15 @@ class MatrixModule(BotModule):
     def cb_match_class(self, s):
         return s.startswith('language-!') or s[-1] == '!'
 
-    def code_block(self, header, text):
+    def code_block(self, text):
         if text:
             return (
-                f'<p><strong>{escape(header)}: </strong></p><pre><code class="language-txt">'
-                + escape(text) + '</code></pre>',
+                f'<pre><code class="language-txt">{escape(text)}</code></pre>',
                 # use markdown-style blocks for clients which parse it from event.body
-                '\n'.join([header, '```', text.rstrip(), '```'])
+                '\n'.join(['```', text, '```'])
             )
         else:
-            return (f'<p><em>no {escape(header)}</em>', f'(no {header})')
+            return None
 
     def help(self):
         return 'Evaluate code in an ephemeral container'
