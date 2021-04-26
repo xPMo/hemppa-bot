@@ -280,7 +280,7 @@ class MatrixModule(BotModule):
             return (f'<p><em>no {escape(header)}</em>', f'(no {header})')
 
     def help(self):
-        return 'Evaluate code in a container'
+        return 'Evaluate code in an ephemeral container'
 
     def long_help(self, bot=None, event=None, **kwargs):
         text = self.help() + (
