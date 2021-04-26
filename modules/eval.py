@@ -282,7 +282,6 @@ class MatrixModule(BotModule):
     def help(self):
         return 'Evaluate code in a container'
 
-
     def long_help(self, bot=None, event=None, **kwargs):
         text = self.help() + (
                 '\n- !eval (list|ls|langs): list the current languages and their aliases'
@@ -293,7 +292,7 @@ class MatrixModule(BotModule):
                 '\n- ... [marked-codeblock] ...: run code (see below)'
                 )
         if bot and event and bot.is_owner(event):
-            text += ('Bot owner commands:'
+            text += ('\nBot owner commands:'
                      '\n- !eval (add|new) [lang] [container] [command ...]: add an new language'
                      '\n- !eval alias [name] [lang]: add an alias [name] for [lang]'
                      '\n- !eval (set|setprop) [lang] [property] [value]: alter a language'

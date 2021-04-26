@@ -2,9 +2,9 @@
 set -e
 
 cp_modules(){
-	set modules/*.py
+	set ./modules/*.py
 	if [ -e "$1" ]; then
-		cp -P "$@" hemppa/modules
+		ln -ft hemppa/modules "$@" 
 	fi
 }
 
