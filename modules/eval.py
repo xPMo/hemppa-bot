@@ -196,6 +196,8 @@ class MatrixModule(BotModule):
             self.logger.info(f"sender: {event.sender} wants to eval some code")
             html, plain = self.run_code(lang, code, f'eval-{event.sender}')
             return await self.bot.send_html(room, html, plain)
+        except (ValueError, IndexError):
+            return
         except Exception as e:
             # No formatted body
             self.logger.warning(f'unexpected exception in callback: {repr(e)}')
@@ -205,7 +207,7 @@ class MatrixModule(BotModule):
             cmd, event.body = event.body.split(None, 1)      # [!cmd] [(!)subcmd body]
             if cmd in ['!' + self.name, self.name]:
                 cmd, event.body = event.body.split(None, 1)  # [!subcmd] [body]
-        except ValueError:
+        except (ValueError, IndexError):
             # couldn't split, not enough arguments in body
             cmd = event.body.strip()
             event.body = ''
