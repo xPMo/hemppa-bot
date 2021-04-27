@@ -24,7 +24,7 @@ class MatrixModule(BotModule):
                 'gives {} a strip of <em>succulent</em> bacon 🥓'
             ),
             (
-                -0,92,
+                -0.92,
                 'gives {} a strip of delicious bacon 🥓',
                 'gives {} a strip of <em>delicious</em> bacon 🥓'
             ),
@@ -55,8 +55,8 @@ class MatrixModule(BotModule):
         try:
             roll = event.source['content']['roll']
             if not bot.is_owner(event):
-                return await bot.send_text(room, "{event.sender} isn't allowed in the kitchen")
-            roll = float(roll) % 1.0
+                return await bot.send_text(room, f"{event.sender} isn't allowed in the kitchen")
+            roll = float(roll)
         except (AttributeError, KeyError, ValueError) as e:
             roll = random.uniform(-1,1)
 
