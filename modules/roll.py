@@ -13,7 +13,7 @@ class MatrixModule(BotModule):
                 sides = int(sides)
                 count = int(count or 1)
                 res += [1 + randrange(sides) for _ in range(count)]
-            await bot.send_text(room, f'{event.sender}: {"+".join(map(str, res))} = {sum(res)}')
+            await bot.send_text(room, f'{"+".join(map(str, res))} = {sum(res)}')
         except TypeError:
             await bot.send_text(room, 'Missing argument')
         except ValueError:

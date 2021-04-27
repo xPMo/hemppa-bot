@@ -61,7 +61,6 @@ class MatrixModule(BotModule):
             self.logger.error(f"room: {room.name}: mumble_ping failed: {e}")
             await bot.send_text(room, f'Could not get get mumble server info: {e}')
 
-
     def mumble_ping(self):
         addrinfo = socket.getaddrinfo(self.host, self.port, 0, 0, socket.SOL_UDP)
 
