@@ -9,42 +9,42 @@ class MatrixModule(BotModule):
         super().__init__(name)
         self.bacons = [
             (
-                0.98,
+                0.96,
                 'gives {} TWO strips of bacon 🥓🥓',
                 'gives {} <strong>two</strong> strips of bacon 🥓🥓'
             ),
             (
-                0.96,
+                0.94,
                 'gives {} a strip of immaculately cooked bacon 🥓',
                 'gives {} a strip of <em>immaculately cooked</em> bacon 🥓'
             ),
             (
-                0.92,
+                0.84,
                 'gives {} a strip of succulent bacon 🥓',
                 'gives {} a strip of <em>succulent</em> bacon 🥓'
             ),
             (
-                0.04,
+                -0,92,
                 'gives {} a strip of delicious bacon 🥓',
                 'gives {} a strip of <em>delicious</em> bacon 🥓'
             ),
             (
-                0.02,
+                -0.96,
                 'gives {} a strip of crispy bacon 🥓',
                 'gives {} a strip of <em>crispy</em> bacon 🥓'
             ),
             (
-                0.01,
+                -0.98,
                 'gives {} one egg, over-easy 🍳',
                 'gives {} one egg, over-easy 🍳'
             ),
             (
-                0.005,
+                -0.99,
                 "burned {}'s bacon, sorry.",
                 "burned {}'s bacon, sorry."
             ),
             (
-                0,
+                -1.00,
                 "EmptySkilletException: Bacon not found",
                 "<strong>EmptySkilletException: Bacon not found</strong>"
             ),
@@ -52,9 +52,16 @@ class MatrixModule(BotModule):
 
     async def matrix_message(self, bot, room, event):
         self.logger.debug(f"room: {room.name} sender: {event.sender} asked for bacon")
-        rand = random.uniform(0,1)
+        try:
+            roll = event.source['content']['roll']
+            if not bot.is_owner(event):
+                return await bot.send_text(room, "{event.sender} isn't allowed in the kitchen")
+            roll = float(roll) % 1.0
+        except (AttributeError, KeyError, ValueError) as e:
+            roll = random.uniform(-1,1)
+
         for n, plain, html in self.bacons:
-            if rand >= n:
+            if roll >= n:
                 break
 
         body = None
