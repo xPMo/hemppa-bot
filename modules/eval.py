@@ -229,7 +229,7 @@ class MatrixModule(BotModule):
         net = lang.get('net') or 'none'
         pids = lang.get('pids-limit') or 64
         mem = lang.get('memory') or '32M'
-        workdir = lang.get('workdir') or '/'
+        workdir = lang.get('workdir') or '/root'
 
         podman_opts += [f'--pids-limit={pids}', f'--memory={mem}', f'--net={net}', f'--workdir={workdir}']
         podman_opts += lang.get('podman_opts') or []
