@@ -121,16 +121,16 @@ class MatrixModule(BotModule):
         args = shlex.split(event.body)
 
         if len(args) < 3:
-            return {'send_text': f'Usage: {cmd} [lang] [property] [value ...].'}
+            return await bot.send_text(room, f'Usage: {cmd} [lang] [property] [value ...].')
         lang = self.get_lang(args[0])
         if not lang:
-            return {'send_text': f'{lang} has not been added.'}
+            return await bot.send_text(room, f'{lang} has not been added.')
 
         # integer values
         if args[1] in ['timeout']:
             val = int(args[2])
             if val <= 0:
-                return {'send_text', f'{args[1]} must be a positive integer'}
+                return await bot.send_text(room, f'{args[1]} must be a positive integer')
         # string values
         elif args[1] in ['container', 'memory', 'pids', 'net', 'workdir']:
             val = args[2]
@@ -139,18 +139,20 @@ class MatrixModule(BotModule):
             val = args[2:]
         # unknown values
         else:
-            return {'send_text': f'Not a property: {args[1]}'}
+            return await bot.send_text(room, f'Not a property: {args[1]}')
 
         lang[args[1]] = val
-        return {'send_text': f'Set property {args[1]} for {args[0]}', 'save_settings': True}
+        bot.save_settings()
+        return await bot.send_text(room, f'Set property {args[1]} for {args[0]}')
 
     async def get_lang_prop(self, bot, room, event, cmd):
         self.logger.info(f"sender: {event.sender} wants to list a language's properties")
-        lang = self.get_lang(event.body.split(None, 1)[0])
+        name = event.body.split(None, 1)[0]
+        lang = self.get_lang(name)
         if not lang:
             msg = f'{lang} has not been added.'
         else:
-            msg = [f'{args[0]}:']
+            msg = [f'{name}:']
             for key, val in lang.items():
                 msg.append(f'- {key}: {val}')
             msg = '\n'.join(msg)
