@@ -132,7 +132,7 @@ class MatrixModule(BotModule):
             if val <= 0:
                 return await bot.send_text(room, f'{args[1]} must be a positive integer')
         # string values
-        elif args[1] in ['container', 'memory', 'pids', 'net', 'workdir']:
+        elif args[1] in ['container', 'memory', 'pids', 'net', 'workdir', 'stdout-class', 'stdin-class']:
             val = args[2]
         # list values
         elif args[1] in ['podman_opts', 'command']:
@@ -236,8 +236,8 @@ class MatrixModule(BotModule):
 
         proc = run(['podman', 'run', '--rm', '-i'] + podman_opts + [container] + podman_cmd,
                 input=code.encode('utf-8'), stdout=PIPE, stderr=PIPE, timeout=timeout)
-        stdout = self.code_block(proc.stdout.decode().strip('\n'))
-        stderr = self.code_block(proc.stderr.decode().strip('\n'))
+        stdout = self.code_block(lang.get('stdout-class'), proc.stdout.decode().strip('\n'))
+        stderr = self.code_block(lang.get('stderr-class'), proc.stderr.decode().strip('\n'))
         if not stdout and not stderr:
             parts = [('<em>no stdout or stderr</em>', 'no stdout or stderr')]
         else:
@@ -280,10 +280,11 @@ class MatrixModule(BotModule):
     def cb_match_class(self, s):
         return s.startswith('language-!') or s[-1] == '!'
 
-    def code_block(self, text):
+    def code_block(self, langclass, text):
         if text:
+            langclass = langclass or 'txt'
             return (
-                f'<pre><code class="language-txt">{escape(text)}</code></pre>',
+                f'<pre><code class="language-{langclass}">{escape(text)}</code></pre>',
                 # use markdown-style blocks for clients which parse it from event.body
                 '\n'.join(['```', text, '```'])
             )
