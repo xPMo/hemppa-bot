@@ -308,13 +308,13 @@ class MatrixModule(BotModule):
                      '\n- !eval (remove|rm) [name]: remove a language, or alias to a language'
                      )
         text += ('\nRunning code:'
-                 '\n    !eval will attempt to find a code block in the message\'s formatteed_body.'
-                 '\n    If a multiline codeblock has a language specifier, that language is preferred.'
-                 '\n    Otherwise, the first codeblock (inline or otherwise) is used'
+                 '\n>  !eval will attempt to find a code block in the message\'s formatteed_body.'
+                 '\n>  If a multiline codeblock has a language specifier, that language is preferred.'
+                 '\n>  Otherwise, the first codeblock (inline or otherwise) is used'
                  'with the language given in one of the forms above.'
-                 '\n    If no codeblock is found, then the remaining body after [lang] is interpreted as code.'
+                 '\n>  If no codeblock is found, then the remaining body after [lang] is interpreted as code.'
                  '\nMarked codeblock:'
-                 '\n    A marked codeblock contains a formatted_body with a <code class="language-[lang]!"> block.'
-                 '\n    Your markdown editor can probably produce such a code block with ```[lang]!'
+                 '\n>  A marked codeblock contains a formatted_body with a <code class="language-[lang]!"> block.'
+                 '\n>  Your markdown editor can probably produce such a code block with ```[lang]!'
                  )
         return text
