@@ -62,7 +62,7 @@ class MatrixModule(BotModule):
         self.langmap[key] = {"container": args[1], "command": args[2:]}
         self.add_module_aliases(bot, [key, f'eval{key}'])
         bot.save_settings()
-        await bot.send_text(room, f'Added {args[0]}')
+        return await bot.send_text(room, f'Added {args[0]}')
 
     async def rm_lang(self, bot, room, event, cmd):
         bot.must_be_owner(event)
@@ -187,7 +187,6 @@ class MatrixModule(BotModule):
         if "m.new_content" in content:
             return
         try:
-            #print(type(event.formatted_body), event.formatted_body)
             if not event.formatted_body:
                 return
             # Make sure the class ends with '!'
