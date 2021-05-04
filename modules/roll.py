@@ -15,9 +15,11 @@ class MatrixModule(BotModule):
                 sides = int(sides)
                 count = int(count or 1)
                 res += [1 + randrange(sides) for _ in range(count)]
+            if len(res) < 2:
+                return await bot.send_text(room, str(res[0]))
             return await bot.send_text(room, f'{"+".join(map(str, res))} = {sum(res)}')
         except ValueError:
-            return await bot.send_text(room, 'Invalid dice spec: {arg}')
+            return await bot.send_text(room, f'Invalid dice spec: {arg}')
 
     def help(self):
         return 'Roll dice'
