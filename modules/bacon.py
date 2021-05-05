@@ -14,7 +14,7 @@ class MatrixModule(BotModule):
                 'gives {} <strong>two</strong> strips of bacon 🥓🥓'
             ),
             (
-                0.94,
+                0.92,
                 'gives {} a strip of immaculately cooked bacon 🥓',
                 'gives {} a strip of <em>immaculately cooked</em> bacon 🥓'
             ),
@@ -45,8 +45,8 @@ class MatrixModule(BotModule):
             ),
             (
                 -1.00,
-                "EmptySkilletException: Bacon not found",
-                "<strong>EmptySkilletException: Bacon not found</strong>"
+                "raised EmptySkilletException: Bacon not found",
+                "raised <strong>EmptySkilletException: Bacon not found</strong>"
             ),
         ]
 
