@@ -159,11 +159,12 @@ class MatrixModule(BotModule):
         await bot.send_text(room, msg)
 
     async def cmd_code(self, bot, room, event, cmd):
+        lang = None
         try:
             self.logger.info(f"sender: {event.sender} wants to eval some code")
             lang, code = self.get_code_html(event.formatted_body)
             lang = lang or self.get_lang(cmd)
-        except AttributeError:
+        except (AttributeError, TypeError):
             # No formatted_body
             code = event.body
             lang = lang or self.get_lang(cmd)
