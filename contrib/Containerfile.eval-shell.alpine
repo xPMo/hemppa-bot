@@ -1,2 +1,2 @@
 FROM alpine:edge
-RUN apk add --no-cache bash fish mksh tcsh zsh gawk sed jq coreutils moreutils
+RUN apk add --no-cache bash fish mksh tcsh zsh gawk sed jq coreutils moreutils tzdata
