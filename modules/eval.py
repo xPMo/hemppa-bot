@@ -256,9 +256,9 @@ class MatrixModule(BotModule):
         stdout = stdout and self.code_block(lang.get('stdout-class'), stdout.decode().strip('\n'))
         stderr = stderr and self.code_block(lang.get('stderr-class'), stderr.decode().strip('\n'))
         if not stdout and not stderr:
-            parts.append(('<em>no stdout or stderr</em>', 'no stdout or stderr'))
+            parts.append(('<p><em>no stdout or stderr</em></p>', 'no stdout or stderr'))
         else:
-            parts += [stdout or ('<em>no stdout</em>', 'no stdout'), stderr or ('<em>no stderr</em>', 'no stderr')]
+            parts += [stdout or ('<p><em>no stdout</em></p>', 'no stdout'), stderr or ('<p><em>no stderr</em></p>', 'no stderr')]
 
         return ('\n'.join(i) for i in zip(*parts))
 
