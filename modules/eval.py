@@ -5,7 +5,7 @@ import shlex
 from bs4 import BeautifulSoup
 from html import escape
 
-from subprocess import run, PIPE
+from subprocess import run, PIPE, TimeoutExpired
 
 class MatrixModule(BotModule):
     def __init__(self, name):
@@ -234,17 +234,31 @@ class MatrixModule(BotModule):
         podman_opts += [f'--pids-limit={pids}', f'--memory={mem}', f'--net={net}', f'--workdir={workdir}']
         podman_opts += lang.get('podman_opts') or []
 
-        proc = run(['podman', 'run', '--rm', '-i'] + podman_opts + [container] + podman_cmd,
-                input=code.encode('utf-8'), stdout=PIPE, stderr=PIPE, timeout=timeout)
-        stdout = self.code_block(lang.get('stdout-class'), proc.stdout.decode().strip('\n'))
-        stderr = self.code_block(lang.get('stderr-class'), proc.stderr.decode().strip('\n'))
+        parts = []
+        try:
+            proc = run(['podman', 'run', '--rm', '-i'] + podman_opts + [container] + podman_cmd,
+                input=code.encode('utf-8'), capture_output=True, timeout=timeout)
+            stdout = proc.stdout
+            stderr = proc.stderr
+            if proc.returncode != 0:
+                parts.append((
+                    f'<p><strong>Process exited non-zero</strong>: <code>{proc.returncode}</code></p>',
+                    f'(Process exited non-zero: {proc.returncode})'
+                ))
+        except TimeoutExpired as e:
+            stdout = e.stdout
+            stderr = e.stderr
+            parts.append((
+                f'<p><strong>Process timed out (timeout is {timeout})</strong></p>',
+                f'Process timed out (timeout is {timeout})'
+            ))
+
+        stdout = stdout and self.code_block(lang.get('stdout-class'), stdout.decode().strip('\n'))
+        stderr = stderr and self.code_block(lang.get('stderr-class'), stderr.decode().strip('\n'))
         if not stdout and not stderr:
-            parts = [('<em>no stdout or stderr</em>', 'no stdout or stderr')]
+            parts.append(('<em>no stdout or stderr</em>', 'no stdout or stderr'))
         else:
-            parts = [stdout or ('<em>no stdout</em>', 'no stdout'), stderr or ('<em>no stderr</em>', 'no stderr')]
-        if proc.returncode != 0:
-            parts.insert(0, (f'<p><strong>Process exited non-zero</strong>: <code>{proc.returncode}</code></p>',
-                    f'(Process exited non-zero: {proc.returncode})'))
+            parts += [stdout or ('<em>no stdout</em>', 'no stdout'), stderr or ('<em>no stderr</em>', 'no stderr')]
 
         return ('\n'.join(i) for i in zip(*parts))
 
