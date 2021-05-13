@@ -249,8 +249,8 @@ class MatrixModule(BotModule):
             stdout = e.stdout
             stderr = e.stderr
             parts.append((
-                f'<p><strong>Process timed out (timeout is {timeout})</strong></p>',
-                f'Process timed out (timeout is {timeout})'
+                f'<p><strong>Process timed out in {timeout}s</strong></p>',
+                f'Process timed out in {timeout}s'
             ))
 
         stdout = stdout and self.code_block(lang.get('stdout-class'), stdout.decode().strip('\n'))
