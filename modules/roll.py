@@ -19,7 +19,7 @@ class MatrixModule(BotModule):
                 return await bot.send_text(room, str(res[0]))
             return await bot.send_text(room, f'{"+".join(map(str, res))} = {sum(res)}')
         except ValueError:
-            return await bot.send_text(room, f'Invalid dice spec: {arg}')
+            return await bot.send_text(room, f'Invalid dice spec: {arg}. Use the form [count]d[sides]')
 
     def help(self):
-        return 'Roll dice'
+        return 'Roll [count]d[sides] ... dice (e.g.: !roll 3d6 d20)'
