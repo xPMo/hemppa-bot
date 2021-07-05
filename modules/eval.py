@@ -163,11 +163,11 @@ class MatrixModule(BotModule):
         try:
             self.logger.info(f"sender: {event.sender} wants to eval some code")
             lang, code = self.get_code_html(event.formatted_body)
-            lang = lang or self.get_lang(cmd)
+            lang = self.get_lang(cmd) or lang
         except (AttributeError, TypeError):
             # No formatted_body
             code = event.body
-            lang = lang or self.get_lang(cmd)
+            lang = self.get_lang(cmd) or lang
         if not lang:
             return await bot.send_text(room, f'No matching language')
         html, plain = self.run_code(lang, code, f'eval-{event.sender}')
