@@ -135,7 +135,7 @@ class MatrixModule(BotModule):
             self.logger.info(f"room: {room.name} sender: {event.sender} wants a quote")
             try:
                 quote = random.sample(self.get_quotes(cmd, *body.split()), 1)[0]
-                await bot.send_text(room, f'"{quote}"', msgtype='m.text')
+                await bot.send_text(room, f'{quote}', msgtype='m.text')
             except TypeError:
                 await bot.send_text(room, 'Missing argument')
             except ValueError:
