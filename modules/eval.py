@@ -88,13 +88,13 @@ class MatrixModule(BotModule):
             await bot.send_text(room, f'No language or alias found')
 
     async def list_langs(self, bot, room, event, cmd):
-        ret = []
-        for name in self.langmap.keys():
-            aliases = [k for k, v in self.aliases.items() if v == name]
-            if aliases:
-                name += ' ({})'.format(' '.join(aliases))
-            ret.append(name)
-        await bot.send_text(room, '\n'.join(ret))
+        ret = {k: None for k in self.langmap.keys()}
+        for k, v in self.aliases.items():
+            if ret[v]:
+                ret[v].append(k)
+            else:
+                ret[v] = [k]
+        await bot.send_text(room, '\n'.join([f'{k}: ({", ".join(v)})' if v else k for k, v in ret.items()]))
 
     async def alias_lang(self, bot, room, event, cmd):
         bot.must_be_owner(event)
@@ -152,10 +152,7 @@ class MatrixModule(BotModule):
         if not lang:
             msg = f'{lang} has not been added.'
         else:
-            msg = [f'{name}:']
-            for key, val in lang.items():
-                msg.append(f'- {key}: {val}')
-            msg = '\n'.join(msg)
+            msg = '\n'.join([f'{name}:'] + [f'- {k}: {v}' for k, v in lang.items()])
         await bot.send_text(room, msg)
 
     async def cmd_code(self, bot, room, event, cmd):
