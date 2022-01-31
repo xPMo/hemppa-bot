@@ -55,7 +55,7 @@ class MatrixModule(BotModule):
         try:
             roll = event.source['content']['roll']
             if not bot.is_owner(event):
-                return await bot.send_text(room, f"{event.sender} isn't allowed in the kitchen")
+                return await bot.send_text(room, event, f"{event.sender} isn't allowed in the kitchen")
             roll = float(roll)
         except (AttributeError, KeyError, ValueError) as e:
             roll = random.uniform(-1,1)
@@ -83,7 +83,7 @@ class MatrixModule(BotModule):
                 quoted = quote(event.sender, safe='/@:')
                 target = f'<a href="https://matrix.to/#/{quoted}">{escape(event.sender)}</a>'
 
-        await bot.send_html(room, html.format(target), plain, msgtype="m.emote")
+        await bot.send_html(room, event, html.format(target), plain, msgtype="m.emote")
 
     def help(self):
         return 'Ask for a strip of bacon'

@@ -44,23 +44,23 @@ class MatrixModule(BotModule):
             self.aliases = {}
 
             bot.save_settings()
-            await bot.send_text(room, 'Removed all quotes!')
+            await bot.send_text(room, event, 'Removed all quotes!')
 
         elif cmd in ['addname', 'addkey']:
             bot.must_be_owner(event)
             args = body.split()
 
             if len(args) != 1:
-                await bot.send_text(room, f'{cmd} takes exactly one argument')
+                await bot.send_text(room, event, f'{cmd} takes exactly one argument')
             elif self.key_exists(args[0]):
-                await bot.send_text(room, '{} already exists'.format(args[0]))
+                await bot.send_text(room, event, '{} already exists'.format(args[0]))
             else:
                 self.logger.info(f"room: {room.name} sender: {event.sender} is adding a key")
                 key = args[0].lower()
                 self.quotes[key] = []
                 self.add_module_aliases(bot, [key])
                 bot.save_settings()
-                await bot.send_text(room, 'Added {}'.format(args[0]))
+                await bot.send_text(room, event, 'Added {}'.format(args[0]))
 
 
         elif cmd in ['addalias', 'alias']:
@@ -68,9 +68,9 @@ class MatrixModule(BotModule):
             args = body.split()
 
             if len(args) != 2:
-                await bot.send_text(room, f'{cmd} takes exactly two arguments')
+                await bot.send_text(room, event, f'{cmd} takes exactly two arguments')
             elif self.key_exists(args[0]):
-                await bot.send_text(room, '{} already exists'.format(args[0]))
+                await bot.send_text(room, event, '{} already exists'.format(args[0]))
             else:
                 if self.aliases.get(args[1]):
                     args[1] = self.aliases[args[1]]
@@ -80,9 +80,9 @@ class MatrixModule(BotModule):
                     self.aliases[key] = args[1].lower()
                     self.add_module_aliases(bot, [key])
                     bot.save_settings()
-                    await bot.send_text(room, 'Added {} as alias for {}'.format(args[0], args[1]))
+                    await bot.send_text(room, event, 'Added {} as alias for {}'.format(args[0], args[1]))
                 else:
-                    await bot.send_text(room, 'No such name: {}'.format(args[1]))
+                    await bot.send_text(room, event, 'No such name: {}'.format(args[1]))
 
         elif cmd in ['list', 'ls', 'l']:
             bot.must_be_owner(event)
@@ -90,11 +90,11 @@ class MatrixModule(BotModule):
             self.logger.info(f"room: {room.name} sender: {event.sender} wants to list quotes")
             if body:
                 try:
-                    await bot.send_text(room, '\n'.join(self.get_quotes(*body.split())))
+                    await bot.send_text(room, event, '\n'.join(self.get_quotes(*body.split())))
                 except:
-                    await bot.send_text(room, 'No matching quote')
+                    await bot.send_text(room, event, 'No matching quote')
             else:
-                await bot.send_text(room, '\n'.join(self.quotes.keys()))
+                await bot.send_text(room, event, '\n'.join(self.quotes.keys()))
 
         elif cmd in ['add', 'a', 'new']:
             bot.must_be_owner(event)
@@ -103,11 +103,11 @@ class MatrixModule(BotModule):
                 key, body = body.split(None, 1)
                 self.add_quote(key, body)
                 bot.save_settings()
-                await bot.send_text(room, f'Added to {key} quotes: {body}.')
+                await bot.send_text(room, event, f'Added to {key} quotes: {body}.')
             except IndexError:
-                await bot.send_text(room, f'{cmd} requires a key and a quote')
+                await bot.send_text(room, event, f'{cmd} requires a key and a quote')
             except KeyError:
-                await bot.send_text(room, f'{key} does not exist')
+                await bot.send_text(room, event, f'{key} does not exist')
 
 
         elif cmd in ['remove', 'rm', 'r']:
@@ -119,29 +119,29 @@ class MatrixModule(BotModule):
 
                 l = self.get_quotes(*args)
                 if len(l) == 0:
-                    await bot.send_text(room, 'No matching quote')
+                    await bot.send_text(room, event, 'No matching quote')
                 elif len(l) > 1:
-                    await bot.send_text(room, 'Multiple quotes found:\n - {}'.format('\n - '.join(l)))
+                    await bot.send_text(room, event, 'Multiple quotes found:\n - {}'.format('\n - '.join(l)))
                 else:
                     quotes.remove(l[0])
                     bot.save_settings()
                     self.logger.info(f"room: {room.name} sender: {event.sender} is removing a quote")
-                    await bot.send_text(room, 'Removed quote: {}'.format(l[0]))
+                    await bot.send_text(room, event, 'Removed quote: {}'.format(l[0]))
             except KeyError:
-                await bot.send_text(room, 'No such key: {}'.format(args[0]))
+                await bot.send_text(room, event, 'No such key: {}'.format(args[0]))
 
         else:
 
             self.logger.info(f"room: {room.name} sender: {event.sender} wants a quote")
             try:
                 quote = random.sample(self.get_quotes(cmd, *body.split()), 1)[0]
-                await bot.send_text(room, f'{quote}', msgtype='m.text')
+                await bot.send_text(room, event, f'{quote}', msgtype='m.text')
             except TypeError:
-                await bot.send_text(room, 'Missing argument')
+                await bot.send_text(room, event, 'Missing argument')
             except ValueError:
-                await bot.send_text(room, 'No such quote found')
+                await bot.send_text(room, event, 'No such quote found')
             except KeyError:
-                await bot.send_text(room, 'Not a valid key: {}. Try using "any" as a key.'.format(cmd))
+                await bot.send_text(room, event, 'Not a valid key: {}. Try using "any" as a key.'.format(cmd))
 
     def get_quotes(self, key, *criteria):
         """Returns a list of quotes which contains all strings from criteria
