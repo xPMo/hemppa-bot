@@ -23,13 +23,11 @@ class MatrixModule(BotModule):
     async def matrix_message(self, bot, room, event):
 
         args = event.body.split()
-
         cmd = args.pop(0).lower()
         if cmd == f'!{self.name}' and len(args):
             cmd = args.pop(0).lower()
         if cmd[0] == '!':
             cmd = cmd[1:]
-
         if cmd in ['setup']:
             bot.must_be_admin(room, event)
 
@@ -88,26 +86,26 @@ class MatrixModule(BotModule):
                 await bot.send_text(room, event, f'Ending {title}!')
                 show['is_live'] = False
                 msg = self.make_poll(show)
-                await bot.client.room_send(room.room_id, 'm.room.message', msg)
+                await bot.client.room_send(room.room_id, 'org.matrix.msc3381.poll.start', msg)
                 bot.save_settings()
             else:
                 await bot.send_text(room, event, 'No show is live!')
 
         elif cmd in ['suggest']:
-            if show['is_live']:
-                title = ' '.join(args)
-                self.logger.info(f"room: {room.name} sender: {event.sender} is suggesting {title}")
-                other_user = show['suggestions'].get(title)
-                if other_user:
-                    await bot.send_text(room, event, f'{title} was already suggested by {other_user}!')
-                else:
-                    show['suggestions'][title] = event.sender
-                    bot.save_settings()
-            else:
-                await bot.send_text(room, event, 'No show is live!')
+            if not show['is_live']:
+                return await bot.send_text(room, event, 'No show is live!')
+            title = ' '.join(args)
+            self.logger.info(f"room: {room.name} sender: {event.sender} is suggesting {title}")
+            other_user = show['suggestions'].get(title)
+            if other_user:
+                return await bot.send_text(room, event, f'{title} was already suggested by {other_user}!')
+            show['suggestions'][title] = event.sender
+            bot.save_settings()
+            return await bot.room_send(room.room_id, event, 'm.reaction', self.react(event, '✅'))
 
         # For now, consider "live" as default
         #elif cmd in ['live', 'islive']:
+
         else:
             self.logger.info(f"room: {room.name} sender: {event.sender} is asking if a show is live")
             if show['is_live']:
@@ -124,21 +122,38 @@ class MatrixModule(BotModule):
         for i, k in enumerate(show['suggestions']):
             s = '{} ({})'.format(k, show['suggestions'][k])
             options.append({
-                'label': s,
-                'value': '{}: {}'.format(i, s)
+                'id': f'{i}-{s}',
+                'org.matrix.msc1767.text': s
             })
 
         return {
-            'body': label + '\n' + '\n'.join([opt['label'] for opt in options]),
-            'label': label,
-            'msgtype': 'org.matrix.options',
-            'type': 'org.matrix.poll',
-            'options': options
+            'org.matrix.msc1767.text': '\n'.join(
+                [label] + [opt['org.matrix.msc1767.text'] for opt in options]
+            ),
+            'org.matrix.msc3381.poll.start': {
+                'question': {
+                    'org.matrix.msc1767.text': label,
+                    'body': label,
+                    'msgtype': 'm.text'
+                },
+                'kind': 'org.matrix.msc3381.poll.disclosed',
+                'answers': options,
+                'max_selections': i
+            }
         }
 
     def set_title(self, show, title):
         if title:
             show['title'] = title
+
+    def react(self, event, reaction):
+        return {
+            "m.relates_to": {
+                "rel_type": "m.annotation",
+                "event_id": event.event_id,
+                "key": reaction
+            }
+        }
 
     # Fallback show title
     def get_title(self, show, room):
