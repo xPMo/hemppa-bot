@@ -1,4 +1,3 @@
-import asyncio
 from modules.common.module import BotModule
 import requests
 import re
@@ -8,18 +7,19 @@ class MatrixModule(BotModule):
         super().__init__(name)
         self.rooms = dict()
         self.sites = dict()
+        self.site_data = dict()
 
     def set_settings(self, data):
         super().set_settings(data)
         if data.get('rooms'):
-            self.search_index = data['rooms']
+            self.rooms = data['rooms']
         if data.get('sites'):
             self.shows = data['sites']
 
     def get_settings(self):
         data = super().get_settings()
         data['rooms'] = self.rooms
-        data['sites'] = self.shows
+        data['sites'] = self.sites
         return data
 
 
@@ -74,7 +74,7 @@ class MatrixModule(BotModule):
             site = self.get_site(name_or_alias, room=room)
             if not site:
                 return await bot.send_text(room, event, f'Sorry, could not find settings for site or alias `{name_or_alias}`')
-            results = self.search_index(site, args)
+            results = await self.search_index(site, args)
             if len(results):
                 msg = ['I found these results:']
                 for (_, result) in results[:3]:
@@ -84,7 +84,7 @@ class MatrixModule(BotModule):
             else:
                 return await bot.send_text(room, event, 'Unable to find a reference for the search.')
 
-    async def add_site(self, bot=None, room=None, event=None, args=[]):
+    async def add_site(self, bot, room, event=None, args=[]):
         name, url = args
         sites = self.rooms[room.room_id]
         if sites.get(name):
@@ -99,7 +99,7 @@ class MatrixModule(BotModule):
         await self.populate_index(name, room=room)
         bot.save_settings()
 
-    def get_site(self, name_or_alias, room=None):
+    def get_site(self, name_or_alias, room):
         sites = self.rooms[room.room_id]
         if sites.get(name_or_alias):
             return sites[name_or_alias]
@@ -113,7 +113,8 @@ class MatrixModule(BotModule):
 
     async def search_index(self, site, keywords):
         matches = []
-        for doc in reversed(site['docs']):
+        docs = self.site_data[site.url]
+        for doc in reversed(docs):
             weight = 0
             for keyword in keywords:
                 if re.search(keyword, doc['text'], re.IGNORECASE):
@@ -124,13 +125,13 @@ class MatrixModule(BotModule):
             matches.sort(key=lambda tup: tup[0])
         return matches
 
-    async def populate_index(self, name, room=None):
+    async def populate_index(self, name, room):
         url = self.rooms[room.room_id][name]['url']
         response = requests.get(f'{url}/search/search_index.json').json()
         self.sites[name] = {
             'config': response['config'],
-            'docs': []
         }
+        self.site_data[url] = []
         for doc in response['docs']:
             parts = doc.location.split('/')
             if len(parts) < 2:
@@ -140,7 +141,7 @@ class MatrixModule(BotModule):
                 # MKDocs search has index for different headers. Ignore.
                 continue
 
-            self.sites[name]['docs'].append(doc)
+            self.sites[url].append(doc)
 
 
 
