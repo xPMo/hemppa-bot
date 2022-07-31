@@ -83,7 +83,7 @@ class MatrixModule(BotModule):
                 quoted = quote(event.sender, safe='/@:')
                 target = f'<a href="https://matrix.to/#/{quoted}">{escape(event.sender)}</a>'
 
-        await bot.send_html(room, event, html.format(target), plain, msgtype="m.emote")
+        await bot.send_html(room, html.format(target), plain, msgtype="m.emote", event=event)
 
     def help(self):
         return 'Ask for a strip of bacon'

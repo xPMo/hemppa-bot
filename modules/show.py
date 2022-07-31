@@ -50,7 +50,7 @@ class MatrixModule(BotModule):
 
         if cmd in ['help']:
             self.logger.info(f"room: {room.name} sender: {event.sender} asked for show help")
-            return await bot.send_text(room, event, self.long_help(bot=bot, room=room, event=event, args=([cmd] + args)))
+            return await bot.send_text(room, self.long_help(bot=bot, room=room, event=event, args=([cmd] + args)), event=event)
 
         elif cmd in ['name', 'rename', 'nameshow', 'renameshow']:
             bot.must_be_admin(room, event)
@@ -67,11 +67,11 @@ class MatrixModule(BotModule):
 
             self.logger.info(f"room: {room.name} sender: {event.sender} wants to start a show")
             if show['is_live']:
-                await bot.send_text(room, event, f'{title} is already live!')
+                await bot.send_text(room, f'{title} is already live!', event=event)
             else:
                 self.logger.info(f"room: {room.name} sender: {event.sender} is starting a show")
 
-                await bot.send_text(room, event, f'Starting {title}!')
+                await bot.send_text(room, f'Starting {title}!', event=event)
 
                 show['is_live'] = True
                 show['suggestions'] = dict()
@@ -83,22 +83,22 @@ class MatrixModule(BotModule):
             title = self.get_title(show, room)
             if show['is_live']:
                 self.logger.info(f"room: {room.name} sender: {event.sender} is ending a show")
-                await bot.send_text(room, event, f'Ending {title}!')
+                await bot.send_text(room, f'Ending {title}!', event=event)
                 show['is_live'] = False
                 msg = self.make_poll(show)
                 await bot.client.room_send(room.room_id, 'org.matrix.msc3381.poll.start', msg)
                 bot.save_settings()
             else:
-                await bot.send_text(room, event, 'No show is live!')
+                await bot.send_text(room, 'No show is live!', event=event)
 
         elif cmd in ['suggest']:
             if not show['is_live']:
-                return await bot.send_text(room, event, 'No show is live!')
+                return await bot.send_text(room, 'No show is live!', event=event)
             title = ' '.join(args)
             self.logger.info(f"room: {room.name} sender: {event.sender} is suggesting {title}")
             other_user = show['suggestions'].get(title)
             if other_user:
-                return await bot.send_text(room, event, f'{title} was already suggested by {other_user}!')
+                return await bot.send_text(room, f'{title} was already suggested by {other_user}!', event=event)
             show['suggestions'][title] = event.sender
             bot.save_settings()
             return await bot.room_send(room.room_id, event, 'm.reaction', self.react(event, '✅'))
@@ -110,9 +110,9 @@ class MatrixModule(BotModule):
             self.logger.info(f"room: {room.name} sender: {event.sender} is asking if a show is live")
             if show['is_live']:
                 title = self.get_title(show, room)
-                await bot.send_text(room, event, f'{title} is live!')
+                await bot.send_text(room, f'{title} is live!', event=event)
             else:
-                await bot.send_text(room, event, 'No show is live!')
+                await bot.send_text(room, 'No show is live!', event=event)
 
 
     def make_poll(self, show):

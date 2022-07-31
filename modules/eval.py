@@ -53,16 +53,16 @@ class MatrixModule(BotModule):
 
         key = args[0].lower()
         if len(args) < 3:
-            return {'send_text': f'{cmd} needs at least three arguments'}
+            return await bot.send_text(room, f'{cmd} needs at least three arguments', event)
 
         if key in self.langmap.keys():
-            return {'send_text': f'{args[0]} already exists'}
+            return await bot.send_text(room, f'{args[0]} already exists', event)
 
         self.logger.info(f"sender: {event.sender} is adding a language")
         self.langmap[key] = {"container": args[1], "command": args[2:]}
         self.add_module_aliases(bot, [key, f'eval{key}'])
         bot.save_settings()
-        return await bot.send_text(room, event, f'Added {args[0]}')
+        return await bot.send_text(room, f'Added {args[0]}', event=event)
 
     async def rm_lang(self, bot, room, event, cmd):
         bot.must_be_owner(event)
@@ -70,22 +70,21 @@ class MatrixModule(BotModule):
         args = event.body.split()
 
         if len(args) != 1:
-            return {'send_text': f'{cmd} takes exactly one arguments'}
+            return await bot.send_text(room, f'{cmd} takes exactly one arguments', event)
 
         try:
             self.langmap.pop(args[0])
             self.aliases = {k:v for k, v in self.aliases.items() if v != args[0]}
             bot.save_settings()
-            await bot.send_text(room, event, f'removed language {args[0]}')
-            return
+            return await bot.send_text(room, f'removed language {args[0]}', event)
         except KeyError:
             pass
         try:
             self.aliases.pop(args[0])
             bot.save_settings()
-            await bot.send_text(room, event, f'removed alias {args[0]}')
+            return await bot.send_text(room, f'removed alias {args[0]}', event)
         except:
-            await bot.send_text(room, event, f'No language or alias found')
+            return await bot.send_text(room, f'No language or alias found', event)
 
     async def list_langs(self, bot, room, event, cmd):
         ret = {k: None for k in self.langmap.keys()}
@@ -94,7 +93,7 @@ class MatrixModule(BotModule):
                 ret[v].append(k)
             else:
                 ret[v] = [k]
-        await bot.send_text(room, event, '\n'.join([f'{k}: ({", ".join(v)})' if v else k for k, v in ret.items()]))
+        await bot.send_text(room, '\n'.join([f'{k}: ({", ".join(v)})' if v else k for k, v in ret.items()]), event)
 
     async def alias_lang(self, bot, room, event, cmd):
         bot.must_be_owner(event)
@@ -113,7 +112,8 @@ class MatrixModule(BotModule):
 
         self.aliases[args[0]] = args[1]
         self.add_module_aliases(bot, [args[0], f'eval{args[0]}'])
-        return {'send_text': f'Added {args[0]}', 'save_settings': True}
+        bot.save_settings()
+        return await bot.send_text(room, f'Added {args[0]}', event)
 
     async def set_lang_prop(self, bot, room, event, cmd):
         bot.must_be_owner(event)
@@ -121,16 +121,16 @@ class MatrixModule(BotModule):
         args = shlex.split(event.body)
 
         if len(args) < 3:
-            return await bot.send_text(room, event, f'Usage: {cmd} [lang] [property] [value ...].')
+            return await bot.send_text(room, f'Usage: {cmd} [lang] [property] [value ...].', event)
         lang = self.get_lang(args[0])
         if not lang:
-            return await bot.send_text(room, event, f'{lang} has not been added.')
+            return await bot.send_text(room, f'{lang} has not been added.', event)
 
         # integer values
         if args[1] in ['timeout']:
             val = int(args[2])
             if val <= 0:
-                return await bot.send_text(room, event, f'{args[1]} must be a positive integer')
+                return await bot.send_text(room, f'{args[1]} must be a positive integer', event)
         # string values
         elif args[1] in ['container', 'memory', 'pids', 'net', 'workdir', 'stdout-class', 'stdin-class']:
             val = args[2]
@@ -139,11 +139,11 @@ class MatrixModule(BotModule):
             val = args[2:]
         # unknown values
         else:
-            return await bot.send_text(room, event, f'Not a property: {args[1]}')
+            return await bot.send_text(room, f'Not a property: {args[1]}', event)
 
         lang[args[1]] = val
         bot.save_settings()
-        return await bot.send_text(room, event, f'Set property {args[1]} for {args[0]}')
+        return await bot.send_text(room, f'Set property {args[1]} for {args[0]}', event)
 
     async def get_lang_prop(self, bot, room, event, cmd):
         self.logger.info(f"sender: {event.sender} wants to list a language's properties")
@@ -153,7 +153,7 @@ class MatrixModule(BotModule):
             msg = f'{lang} has not been added.'
         else:
             msg = '\n'.join([f'{name}:'] + [f'- {k}: {v}' for k, v in lang.items()])
-        await bot.send_text(room, event, msg)
+        await bot.send_text(room, msg, event)
 
     async def cmd_code(self, bot, room, event, cmd):
         lang = None
@@ -166,9 +166,9 @@ class MatrixModule(BotModule):
             code = event.body
             lang = self.get_lang(cmd) or lang
         if not lang:
-            return await bot.send_text(room, event, f'No matching language')
+            return await bot.send_text(room, f'No matching language', event)
         html, plain = self.run_code(lang, code, f'eval-{event.sender}')
-        return await bot.send_html(room, event, html, plain)
+        return await bot.send_html(room, html, plain, event)
 
     async def message_cb(self, room, event):
         """
@@ -194,7 +194,7 @@ class MatrixModule(BotModule):
                 return
             self.logger.info(f"sender: {event.sender} wants to eval some code")
             html, plain = self.run_code(lang, code, f'eval-{event.sender}')
-            return await self.bot.send_html(room, event, html, plain)
+            return await self.bot.send_html(room, html, plain, event=event)
         except (ValueError, IndexError):
             return
         except Exception as e:
@@ -283,6 +283,7 @@ class MatrixModule(BotModule):
         name = (name
             .removeprefix('language-')
             .removeprefix('!eval')
+            .removeprefix('!')
             .removesuffix('!')
         )
         name = self.aliases.get(name) or name

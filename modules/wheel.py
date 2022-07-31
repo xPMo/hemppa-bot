@@ -52,10 +52,11 @@ class MatrixModule(BotModule):
             if len(wheel):
                 return await bot.send_html(room,
                         '\n'.join(map(lambda x: f'<b>{html.escape(x[0])}</b> ({html.escape(x[1])})', wheel)),
-                        '\n'.join(map(lambda x: f'{x[0]} ({x[1]})', wheel))
+                        '\n'.join(map(lambda x: f'{x[0]} ({x[1]})', wheel)),
+                        event
                 )
             else:
-                return await bot.send_text(room, event, 'The wheel is empty! Try "!wheel add <something>" first.')
+                return await bot.send_text(room, 'The wheel is empty! Try "!wheel add <something>" first.', event=event)
 
         if cmd in ['spin']:
             bot.must_be_admin(room, event)
@@ -65,14 +66,15 @@ class MatrixModule(BotModule):
                 res   = await bot.send_html(room,
                         f'<b>{html.escape(entry[0])}</b> (suggested by {html.escape(entry[1])})',
                         f'{entry[0]} (suggested by {entry[1]})',
-                        msgtype='m.text'
+                        msgtype='m.text',
+                        event=event
                 )
                 bot.save_settings()
                 return res
             except IndexError:
-                return await bot.send_text(room, event, 'The wheel is empty! Try "!wheel add <something>" first.')
+                return await bot.send_text(room, 'The wheel is empty! Try "!wheel add <something>" first.', event=event)
             except KeyError:
-                return await bot.send_text(room, event, 'Not a valid key: {}. Try using "any" as a key.'.format(cmd))
+                return await bot.send_text(room, 'Not a valid key: {}. Try using "any" as a key.'.format(cmd), event=event)
 
         if cmd in ['add', 'suggest']:
             title = ' '.join(args)
