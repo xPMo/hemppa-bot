@@ -1,4 +1,4 @@
-
+import more_itertools as mit
 from modules.common.module import BotModule
 
 class MatrixModule(BotModule):
@@ -77,19 +77,27 @@ class MatrixModule(BotModule):
                 show['suggestions'] = dict()
                 bot.save_settings()
 
+        elif cmd in ['poll', 'vote']:
+            bot.must_be_admin(room, event)
+
+            if not show['is_live']:
+                return await bot.send_text(room, 'No show is live!', event=event)
+
+            self.logger.info(f"room: {room.name} sender: {event.sender} is starting voting without ending the show")
+            # don't end the show yet, just post current suggestions
+            await self.send_poll(show, bot, room, event)
+
         elif cmd in ['end', 'endshow', 'stop', 'stopshow']:
             bot.must_be_admin(room, event)
 
+            if not show['is_live']:
+                return await bot.send_text(room, 'No show is live!', event=event)
+
             title = self.get_title(show, room)
-            if show['is_live']:
-                self.logger.info(f"room: {room.name} sender: {event.sender} is ending a show")
-                await bot.send_text(room, f'Ending {title}!', event=event)
-                show['is_live'] = False
-                msg = self.make_poll(show)
-                await bot.client.room_send(room.room_id, 'org.matrix.msc3381.poll.start', msg)
-                bot.save_settings()
-            else:
-                await bot.send_text(room, 'No show is live!', event=event)
+            self.logger.info(f"room: {room.name} sender: {event.sender} is ending a show")
+            await bot.send_text(room, f'Ending {title}!', event=event)
+            show['is_live'] = False
+            await self.send_poll(show, bot, room, event) # <- bot.save_settings() happens here
 
         elif cmd in ['suggest']:
             if not show['is_live']:
@@ -114,33 +122,45 @@ class MatrixModule(BotModule):
             else:
                 await bot.send_text(room, 'No show is live!', event=event)
 
+    async def send_poll(self, show, bot, room, event):
+        if not show['suggestions']:
+            return await bot.send_text(room, 'No suggestion collected! You can do better than that!', event=event)
 
-    def make_poll(self, show):
         title = show['title']
         label = f'Title suggestions for {title}'
-        options = []
-        for i, k in enumerate(show['suggestions']):
-            s = '{} ({})'.format(k, show['suggestions'][k])
-            options.append({
-                'id': f'{i}-{s}',
-                'org.matrix.msc1767.text': s
-            })
+        poll_max = 20  # Element restriction
 
-        return {
-            'org.matrix.msc1767.text': '\n'.join(
-                [label] + [opt['org.matrix.msc1767.text'] for opt in options]
-            ),
-            'org.matrix.msc3381.poll.start': {
-                'question': {
-                    'org.matrix.msc1767.text': label,
-                    'body': label,
-                    'msgtype': 'm.text'
-                },
-                'kind': 'org.matrix.msc3381.poll.disclosed',
-                'answers': options,
-                'max_selections': i
+        slist = show['suggestions']
+        chunks = mit.divide((len(slist) - 1) // poll_max + 1, enumerate(slist))
+
+        for segment in chunks:
+            options = []
+            for i, k in segment:
+                s = '{} ({})'.format(k, show['suggestions'][k])
+                options.append({
+                    'id': f'{i}-{s}',
+                    'org.matrix.msc1767.text': s
+                })
+            msg = {
+                'org.matrix.msc1767.text': '\n'.join(
+                    [label] + [opt['org.matrix.msc1767.text'] for opt in options]
+                ),
+                'org.matrix.msc3381.poll.start': {
+                    'question': {
+                        'org.matrix.msc1767.text': label,
+                        'body': label,
+                        'msgtype': 'm.text'
+                    },
+                    'kind': 'org.matrix.msc3381.poll.disclosed',
+                    'answers': options,
+                    'max_selections': i
+                }
             }
-        }
+            await bot.client.room_send(room.room_id, 'org.matrix.msc3381.poll.start', msg)
+        # clear the suggestions after polling
+        show['suggestions'] = dict()
+        bot.save_settings()
+
 
     def set_title(self, show, title):
         if title:
